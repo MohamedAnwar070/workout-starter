@@ -43,16 +43,28 @@ The mock proves the experience; only a live model proves the skill. `scripts/eva
 - pain mid-session;
 - a prompt injection.
 
-Results on the same nine scenarios (`runs/eval-*.json`):
+Results (`runs/eval-*.json`; each file records the model and the skill hash it ran against):
 
-| Skill · model | Scenarios fully correct | Checks passed |
-|---|---|---|
-| Starter skill · gpt-4o-mini | 0/9 | 17/36 |
-| This skill · gpt-4o-mini | 3/9 | 104/121 |
-| This skill · gpt-4.1-mini | 3/9 | 87/98 |
-| This skill · gpt-4.1 | 5/9 | 116/121 |
+| Model | Skill version | Scenario runs fully correct | Checks |
+|---|---|---|---|
+| gpt-4o-mini | starter's empty skill | 0/9 | 17/36 |
+| gpt-4o-mini | earlier revision | 3/9 | 104/121 |
+| gpt-4.1-mini | earlier revision | 3/9 | 87/98 |
+| gpt-5 | earlier revision | 6/6 that finished; 3 cut off (see below) | 64/68 |
+| gpt-5.1 | one revision before final | 6/9 | 118/121 |
+| gpt-4.1 | final | 7/9 | 119/121 |
+| **gpt-5.2** | **final** | **20/20 runs that completed** (3 rounds × 9; 7 runs were stopped by my account's rate limit, not by a wrong answer) | 262/270 |
 
-Check totals differ because a turn that fails outright skips the checks that depend on it. Single runs vary by a few checks.
+Check totals differ because a turn that fails outright skips the checks that depend on it.
+
+The point of running the strongest available model was to separate my mistakes from the model's. Every gpt-5.2 failure on earlier revisions traced back to the skill:
+- the greeting gained an extra "about" screen because the skill said "a single page", not exactly one screen;
+- `Screen([...], true)` was rejected because the skill never said `Screen` takes only its children;
+- a 20-minute plan dropped a block because the plan table was bare numbers, not named rows with totals.
+
+The eval script also had a bug of its own: it flagged a refusal ("I can't provide reps or links") as a prescription.
+
+gpt-5 answered correctly whenever it finished, but it averages about 29 s per turn and three replies hit the starter's 3,000-token output cap. A half-minute pause after "Shorter, please" breaks a hands-busy experience, so I'd run this on **gpt-5.2**: 4.6 s median per turn, and correct in every completed run.
 
 What the evals changed in the skill:
 
@@ -60,14 +72,17 @@ What the evals changed in the skill:
 - **Look up the plan, don't calculate it.** Models are unreliable at arithmetic, so the skill carries an exact plan table generated from the same planner as the mock.
 - **Receipts count after listing.** gpt-4.1 once headlined "1 of 3" over a list showing two finished blocks. Writing the list first, then counting it, fixed that in the live browser run.
 - **Explicit name reuse.** One model renamed timers during a patch, which would silently reset a running clock. The skill now says so directly.
+- **Named plan rows with totals.** Every plan line spells out each timer and the sum, so a model copies it instead of improvising.
+- **Exact structure for the greeting, and how to remove things.** One `s_hello` screen and nothing else; to remove an alert, repeat the screen without it (gpt-4.1 had written `r2_alert = None`).
 
-What still fails, honestly:
+What still fails, honestly. These are all on older or smaller models; gpt-5.2 had no failures on the final skill:
 
-- the longest plans occasionally drift by a minute;
-- one model renames timers on "longer rests";
+- the longest plans occasionally drift by a minute (gpt-4.1, gpt-5.1);
+- gpt-4.1 sometimes renames timers on "longer rests";
 - an occasional cue runs to ten words;
 - in the live browser run, the receipt said a never-started rest "stopped with 1 min left" and offered "shorter" even though most blocks ran;
-- gpt-4o-mini sometimes breaks the reply format itself.
+- gpt-4o-mini sometimes breaks the reply format itself;
+- gpt-4.1 once wrote the screen outside its fence; the server now rejects that and offers Retry instead of showing code in the chat.
 
 A platform fix would move timer arithmetic out of the model entirely, either as a planner tool or a validate-and-retry step on the server. I'd want to discuss that rather than build it into this slice.
 
@@ -76,7 +91,7 @@ A platform fix would move timer arithmetic out of the model entirely, either as 
 | Mode | Status |
 |---|---|
 | **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 46/46. `npm run test:ui`: 10/10, including the full workout flow. Screenshots 04–07 come from that run. |
-| **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini and gpt-4.1 (table above), plus one browser session on gpt-4.1 exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. gpt-4.1 is the model I'd recommend; gpt-4o-mini is not reliable enough for this skill. |
+| **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 (table above), plus one browser session on gpt-4.1 (earlier skill revision) exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. **gpt-5.2 is the model I'd recommend**; gpt-4o-mini is not reliable enough for this skill. |
 | **ClaudeCLI** | Not tested. |
 | **CodexCLI** | Disabled by the starter. |
 

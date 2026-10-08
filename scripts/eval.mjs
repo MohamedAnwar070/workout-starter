@@ -4,7 +4,7 @@
 // and checks each reply against the skill's rules. Uses API budget, so it needs
 // ALLOW_LIVE_API=true in .env and an explicit --consent flag.
 //
-//   npm run build && node --env-file=.env scripts/eval.mjs --consent [--label after] [--model id] [--root dir] [--only name]
+//   npm run build && node --env-file=.env scripts/eval.mjs --consent [--label after] [--model id] [--repeat n] [--root dir] [--only name]
 import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +16,7 @@ import { activityClientEvents } from '../dist/shared/openui/activity-client-even
 
 const args = process.argv.slice(2), flag = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const project = fileURLToPath(new URL('../', import.meta.url));
-const root = resolve(flag('--root') ?? project), label = flag('--label') ?? 'eval', only = flag('--only');
+const root = resolve(flag('--root') ?? project), label = flag('--label') ?? 'eval', only = flag('--only'), repeat = Math.max(1, Number(flag('--repeat') ?? 1));
 const config = readConfig(process.env, project);
 if (flag('--model')) { if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(flag('--model'))) throw new Error('Invalid --model.'); config.model = flag('--model'); }
 if (!args.includes('--consent')) { console.error('This sends requests to OpenAI and uses your API budget. Re-run with --consent to agree.'); process.exit(1); }
@@ -96,7 +96,8 @@ function sessionChecks(results, s, turn, minutes) {
   check(results, 'keywords are 3 words or fewer', all(s, 'Keyword').every(k => String(k.props.text).split(/\s+/).length <= 3));
   check(results, 'no buttons on block screens', screens.every(sc => !(kids(sc).some(n => n.name === 'Keyword' && n.props.color) && kids(sc).some(n => n.name === 'FollowUps'))));
   check(results, 'reply prose states the minutes', turn.prose && says(turn.prose, minutes), turn.prose);
-  check(results, 'no exercise prescription or links', !FORBIDDEN.test(turn.reply));
+  // A refusal in the sentence ("I can't give reps or links") is fine; prescriptions on screen and links anywhere are not.
+  check(results, 'no exercise prescription or links', !FORBIDDEN.test(splitReply(turn.reply).fences.join('\n')) && !/https?:\/\/|www\./i.test(turn.reply));
 }
 
 // ---- Scenarios ----
@@ -180,18 +181,18 @@ const scenarios = {
 
 // ---- Run and report ----
 const report = { format: 'aira-workout-eval-v1', label, model: config.model, skillHash: prompt.skillHash, protocolHash: prompt.protocolHash, root: root === resolve(project) ? '.' : 'alternate', at: new Date().toISOString(), scenarios: [] };
-let passed = 0, count = 0;
-for (const [name, run] of Object.entries(scenarios)) {
-  if (only && name !== only) continue;
-  const s = new Session(), results = [];
+let passed = 0, count = 0, clean = 0, runs = 0;
+for (let round = 1; round <= repeat; round++) for (const [scenario, run] of Object.entries(scenarios)) {
+  if (only && scenario !== only) continue;
+  const name = repeat > 1 ? `${scenario} #${round}` : scenario, s = new Session(), results = [];
   try { await run(s, results); } catch (e) { check(results, 'scenario ran', false, e instanceof Error ? e.message : String(e)); }
-  const ok = results.filter(x => x.pass).length; passed += ok; count += results.length;
+  const ok = results.filter(x => x.pass).length; passed += ok; count += results.length; runs++; if (ok === results.length) clean++;
   console.log(`\n${ok === results.length ? '✓' : '✗'} ${name}  ${ok}/${results.length}`);
   for (const x of results) if (!x.pass) console.log(`    ✗ ${x.name}${x.detail ? `  (${x.detail})` : ''}`);
   report.scenarios.push({ name, passed: ok, total: results.length, results, turns: s.turns });
 }
-report.passed = passed; report.total = count;
-console.log(`\n${label}: ${passed}/${count} checks passed · ${config.model} · skill ${prompt.skillHash.slice(0, 8)}`);
+Object.assign(report, { passed, total: count, scenariosClean: clean, scenariosRun: runs });
+console.log(`\n${label}: ${clean}/${runs} scenarios fully correct · ${passed}/${count} checks · ${config.model} · skill ${prompt.skillHash.slice(0, 8)}`);
 await mkdir(resolve(project, 'runs'), { recursive: true });
 await writeFile(resolve(project, 'runs', `eval-${label}.json`), JSON.stringify(report, null, 2) + '\n');
 console.log(`Saved runs/eval-${label}.json`);
