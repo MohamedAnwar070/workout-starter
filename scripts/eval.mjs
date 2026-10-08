@@ -91,6 +91,7 @@ function sessionChecks(results, s, turn, minutes) {
   const blockCount = ts.filter(t => !isRest(t)).length;
   check(results, '"X of N" counts the real blocks', positions.length === blockCount && positions.every((m, i) => Number(m[1]) === i + 1 && Number(m[2]) === blockCount), positions.map(m => m[0]).join(', '));
   check(results, 'timer labels are unique', new Set(ts.map(t => t.props.label)).size === ts.length);
+  check(results, 'session map on arrival and close', [screens[0], screens.at(-1)].every(sc => kids(sc).some(n => n.name === 'SessionMap')));
   const cues = all(s, 'Cue').map(c => String(c.props.text));
   check(results, 'cues are 9 words or fewer', cues.every(c => c.split(/\s+/).length <= 9), cues.filter(c => c.split(/\s+/).length > 9).join(' | '));
   check(results, 'keywords are 3 words or fewer', all(s, 'Keyword').every(k => String(k.props.text).split(/\s+/).length <= 3));

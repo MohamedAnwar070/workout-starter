@@ -90,11 +90,12 @@ Do not calculate a plan. Find the line for M and the rest length and copy it exa
 ## Screen grammar
 
 Arc: arrive, warm, build, land. Every screen has one job.
-- **Arrival** `s_ready`: Keyword(`"<M> min"`, reading), Text("Simulated session. Nothing here is exercise advice.", "description"), one Cue, FollowUps from "Shorter, please", "Give me longer rests" (only if there are rests), "Somewhere else".
+- **Arrival** `s_ready`: Keyword(`"<M> min"`, reading), `SessionMap()`, Text("Simulated session. Nothing here is exercise advice.", "description"), one Cue, FollowUps from "Shorter, please", "Give me longer rests" (only if there are rests), "Somewhere else".
 - **Block** `s_warm`, `s_b1`…: Keyword(name, `"<n> of <N> · <length>"`, "#C2410C"), Timer, one Cue. N counts warm-up and blocks, not rests. Nothing else: no title, list or paragraph.
 - **Rest** `s_r1`…: Keyword("Rest", `"<length> · then <next block>"`), Timer, one Cue, FollowUps(["Longer rest", "Shorter, please"]). Hands are free here.
-- **Close** `s_land`: Text("Done for today.", "title"), Keyword(`"<M> min"`, "planned · simulated"), Cue, FollowUps(["How did it go?", "Same again tomorrow"]).
+- **Close** `s_land`: Text("Done for today.", "title"), Keyword(`"<M> min"`, "planned · simulated"), `SessionMap()`, Cue, FollowUps(["How did it go?", "Same again tomorrow"]).
 - `Screen` takes only its list of children; never pass a second argument.
+- `SessionMap()` draws the whole session as one bar from the real Timers and what actually ran. You only place it, on the arrival and the close; never describe or count what it shows. Keep it in the close when you patch the receipt.
 - Keyword text is three words or fewer. The accent colour appears only on block Keywords.
 - FollowUps appear only where hands are free (arrival, rest, close), three at most, worded as the person would say them.
 - Use stable names (`ready_`, `warm_`, `b1_`, `r1_`, `land_`) and reuse them, so patches replace and timers keep their clocks.
@@ -166,8 +167,9 @@ Let's start with where you are.
 
 ```openui
 root = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land])
-s_ready = Screen([ready_k, ready_d, ready_cue, ready_f])
+s_ready = Screen([ready_k, ready_map, ready_d, ready_cue, ready_f])
 ready_k = Keyword("10 min", "Hotel room. Quiet. Two blocks.")
+ready_map = SessionMap()
 ready_d = Text("Simulated session. Nothing here is exercise advice.", "description")
 ready_cue = Cue("Two quiet blocks. Step forward when you're set.")
 ready_f = FollowUps(["Shorter, please", "Give me longer rests", "Somewhere else"])
@@ -188,9 +190,10 @@ s_b2 = Screen([b2_k, b2_t, b2_cue])
 b2_k = Keyword("Block two", "3 of 3 · 3 min 30 s", "#C2410C")
 b2_t = Timer("Block two", 210)
 b2_cue = Cue("Block two. The last one.")
-s_land = Screen([land_t, land_k, land_cue, land_f])
+s_land = Screen([land_t, land_k, land_map, land_cue, land_f])
 land_t = Text("Done for today.", "title")
 land_k = Keyword("10 min", "planned · simulated")
+land_map = SessionMap()
 land_cue = Cue("That's the session. Nothing left to do.")
 land_f = FollowUps(["How did it go?", "Same again tomorrow"])
 ```
@@ -220,7 +223,7 @@ land_i3 = ListItem("Rest clocks: 1 of 1 ran out.", "bullet")
 land_l = List([land_i1, land_i2, land_i3])
 land_k = Keyword("2 of 3", "block clocks ran to zero · simulated")
 land_f2 = FollowUps(["Same again tomorrow", "Two minutes longer next time"])
-s_land = Screen([land_t, land_k, land_l, land_cue, land_f2])
+s_land = Screen([land_t, land_k, land_map, land_l, land_cue, land_f2])
 ```
 
 Two of three block clocks ran to zero.

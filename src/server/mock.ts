@@ -115,11 +115,12 @@ function arrivalScreen(steps: Step[], reading: string, alert?: string): string[]
   ];
   return [
     st('ready_k', 'Keyword', [`${total(steps) / 60} min`, reading]),
+    'ready_map = SessionMap()',
     st('ready_d', 'Text', ['Simulated session. Nothing here is exercise advice.', 'description']),
     ...(alert ? [st('ready_alert', 'Alert', ['info', alert])] : []),
     st('ready_cue', 'Cue', [`${cap(words(blocks))} ${quiet ? 'quiet ' : ''}block${blocks === 1 ? '' : 's'}. Step forward when you're set.`]),
     st('ready_f', 'FollowUps', [chips]),
-    refs('s_ready', 'Screen', ['ready_k', 'ready_d', ...(alert ? ['ready_alert'] : []), 'ready_cue', 'ready_f']),
+    refs('s_ready', 'Screen', ['ready_k', 'ready_map', 'ready_d', ...(alert ? ['ready_alert'] : []), 'ready_cue', 'ready_f']),
   ];
 }
 
@@ -154,10 +155,11 @@ function closeScreen(steps: Step[], alert?: string): string[] {
   return [
     st('land_t', 'Text', ['Done for today.', 'title']),
     st('land_k', 'Keyword', [`${total(steps) / 60} min`, 'planned · simulated']),
+    'land_map = SessionMap()',
     ...(alert ? [st('land_alert', 'Alert', ['info', alert])] : []),
     st('land_cue', 'Cue', ["That's the session. Nothing left to do."]),
     st('land_f', 'FollowUps', [['How did it go?', 'Same again tomorrow']]),
-    refs('s_land', 'Screen', ['land_t', 'land_k', ...(alert ? ['land_alert'] : []), 'land_cue', 'land_f']),
+    refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', ...(alert ? ['land_alert'] : []), 'land_cue', 'land_f']),
   ];
 }
 
@@ -313,7 +315,7 @@ function receipt(session: Session, events: string[]): Turn {
     refs('land_l', 'List', items.map((_, i) => `land_i${i + 1}`)),
     st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'block clocks ran to zero · simulated']),
     st('land_f2', 'FollowUps', [[...new Set(['Same again tomorrow', next])]]),
-    refs('s_land', 'Screen', ['land_t', 'land_k', 'land_l', 'land_cue', 'land_f2']),
+    refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', 'land_l', 'land_cue', 'land_f2']),
   ];
   return { reply: fence(doc.join('\n')) + '\n' + headline };
 }

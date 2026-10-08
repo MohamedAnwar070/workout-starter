@@ -80,3 +80,14 @@ test('skill examples stay identical to what the offline director produces',async
   const events=[snapshot('warm_t','done',0,120),snapshot('b1_t','done',0,210),snapshot('r1_t','done',0,60),snapshot('b2_t','paused',35,150)];
   assert.deepEqual(norm(examples[3]),norm(turn('How did it go?',r.doc.echo(),events)),'example 4: receipt');
 });
+
+test('SessionMap is placed on arrival and close, and only takes an optional caption',async()=>{
+  const {validateProgram}=await import('../dist/shared/openui/validate.js');
+  const doc=c=>validateProgram('root = Screens([s])\ns = Screen([m])\nm = '+c);
+  assert.equal(doc('SessionMap()').props.screens[0].props.children[0].name,'SessionMap');
+  assert.equal(doc('SessionMap("What ran")').props.screens[0].props.children[0].props.caption,'What ran');
+  for(const bad of ['SessionMap(5)','SessionMap("a", "b")'])assert.throws(()=>doc(bad));
+  const r=run();r.say('Hotel room, 10 minutes, keep it quiet');
+  assert(r.line('s_ready').includes('ready_map'));assert(r.line('s_land').includes('land_map'));
+  r.doc.move(5);r.say('How did it go?',[snapshot('warm_t','done',0,120)]);assert(r.line('s_land').includes('land_map'),'receipt keeps the map');
+});

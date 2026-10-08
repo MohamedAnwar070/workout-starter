@@ -21,12 +21,15 @@ A workout is a hands-busy moment. So Aira reads the situation from one message, 
    - On a rest, if nothing can change, Aira says the clock can be paused: nothing moves until they tap Next.
 5. **An honest receipt.** "How did it go?" counts the browser's own timer snapshot: what ran to zero, what stopped partway, what was never started, and any resets. Skipping everything gives "None of the three block clocks ran this time, and that's fine". There is no applause and no invented numbers. The next-time chip adapts: two minutes longer if most of it ran, shorter if not.
 6. **Boundaries.** Fictional and synthetic: no exercise names, reps, intensity or health advice. Mentioning pain or dizziness replaces the session with a quiet stop screen.
+7. **Glanceable from across the room.** Each clock is a ring that empties as time runs, readable without reading digits. At zero it turns green and says "Time. Next when you're ready.", and Next lights up, because a person with busy hands isn't watching the numbers.
+8. **A component of my own: `SessionMap`.** One bar for the whole session, each segment sized by its length. On arrival it shows the shape of what's ahead. On the close it shows what actually ran: ran, partly, not started. The model only decides *where* the map goes. The app draws it from the real Timers and their local states, so it can't report a block that didn't run, and the close screen is truthful the moment the person arrives, before any model turn.
 
 ## Where it lives
 
 - `skills/workout.md`: how Aira directs a session (situation reading, the plan arithmetic, screen grammar, voice, live rewrite and receipt rules), with examples generated from the mock so the two agree.
 - `src/server/mock.ts`: a deterministic offline director that follows the same rules, so the whole flow can be tried without a key. It does not read the skill.
 - `src/web/`: a restyled canvas with a short fade between screens that turns off for reduced-motion users. The empty state has a **Start a session** button, and empty chat replies are hidden.
+- `SessionMap` follows the starter's component path: signature in `src/shared/openui/openui-library.ts`, prop validation in `validate.ts`, a trusted renderer in `src/web/components.ts`. The ring timer and done state are changes to the existing Timer renderer.
 - `tests/workout.test.mjs` and `tests/browser/workout.spec.mjs` cover the experience itself: timer sums for every length from 1 to 60 minutes, situation reading, future-only patches, the receipt and the safety stop.
 
 ## Testing the AI, not just the code
@@ -52,10 +55,10 @@ Results (`runs/eval-*.json`; each file records the model and the skill hash it r
 | gpt-4.1-mini | earlier revision | 3/9 | 87/98 |
 | gpt-5 | earlier revision | 6/6 that finished; 3 cut off (see below) | 64/68 |
 | gpt-5.1 | one revision before final | 6/9 | 118/121 |
-| gpt-4.1 | final | 7/9 | 119/121 |
-| **gpt-5.2** | **final** | **20/20 runs that completed** (3 rounds × 9; 7 runs were stopped by my account's rate limit, not by a wrong answer) | 262/270 |
+| gpt-4.1 | final, before `SessionMap` | 7/9 | 119/121 |
+| **gpt-5.2** | **final, before `SessionMap`** | **20/20 runs that completed** (3 rounds × 9; 7 runs were stopped by my account's rate limit, not by a wrong answer) | 262/270 |
 
-Check totals differ because a turn that fails outright skips the checks that depend on it.
+Check totals differ because a turn that fails outright skips the checks that depend on it. `SessionMap` was added after these runs. The eval now also checks that the model places it on the arrival and the close, but that check has not run live yet: my account had reached its rate limit.
 
 The point of running the strongest available model was to separate my mistakes from the model's. Every gpt-5.2 failure on earlier revisions traced back to the skill:
 - the greeting gained an extra "about" screen because the skill said "a single page", not exactly one screen;
@@ -90,7 +93,7 @@ A platform fix would move timer arithmetic out of the model entirely, either as 
 
 | Mode | Status |
 |---|---|
-| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 46/46. `npm run test:ui`: 10/10, including the full workout flow. Screenshots 04–07 come from that run. |
+| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 48/48. `npm run test:ui`: 10/10, including the full workout flow. Screenshots 04–07 come from that run. |
 | **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 (table above), plus one browser session on gpt-4.1 (earlier skill revision) exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. **gpt-5.2 is the model I'd recommend**; gpt-4o-mini is not reliable enough for this skill. |
 | **ClaudeCLI** | Not tested. |
 | **CodexCLI** | Disabled by the starter. |

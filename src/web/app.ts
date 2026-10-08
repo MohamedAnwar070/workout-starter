@@ -43,7 +43,8 @@ function render(){
   const screens=c.document.screens,index=screens.findIndex(s=>s.key===c.document.cursor),key=c.document.echo()+String(paused);
   if(key!==renderKey || !byId('screen').childNodes.length){renderKey=key;updates=[];const surface=byId('screen');surface.replaceChildren();const current=c.document.current;
     if(!current){const n=el('div','','empty');n.append(el('p','AIRA · WORKOUT','eyebrow'),el('h3','Your workout starts here.'),el('p','Tell me where you are and how long you have. I\'ll shape the rest.'),button('Start a session',()=>send('Start a session'),'primary'));surface.append(n);}
-    else for(const node of current.props.children as StatementNode[])if(node.name!=='Cue')surface.append(renderComponent(node,{send,timers,timerAction,updates,paused}));
+    else{const plan=()=>c.document.screens.flatMap((s,i)=>(s.props.children as StatementNode[]).filter(n=>n.name==='Timer').map(n=>({id:n.key,label:String(n.props.label),seconds:Number(n.props.seconds),current:i===index})));
+      for(const node of current.props.children as StatementNode[])if(node.name!=='Cue')surface.append(renderComponent(node,{send,timers,timerAction,updates,paused,plan}));}
     const progress=byId('progress');progress.replaceChildren();if(screens.length>1)for(let i=0;i<screens.length;i++){const n=el('span','',''+(i===index?'active':i<index?'past':''));n.setAttribute('aria-label',`Screen ${i+1}${i===index?', current':''}`);progress.append(n);}
   }
   byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;byId<HTMLButtonElement>('next').disabled=paused;byId('next').textContent=index===screens.length-1?'Finish preview':'Next →';

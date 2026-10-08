@@ -18,6 +18,7 @@ export const propValidators: Record<string, (p: Record<string, unknown>) => bool
   Timer: p => text(p.label) && Number.isInteger(p.seconds) && Number(p.seconds) > 0 && Number(p.seconds) <= 3600 && (p.image === undefined || p.image === null),
   Cue: p => text(p.text),
   FollowUps: p => Array.isArray(p.prompts) && p.prompts.length <= 6 && p.prompts.every(text),
+  SessionMap: p => optional(p.caption, text),
 };
 export function validateProgram(code: string, library: Vocabulary = OPENUI_LIBRARY, validators = propValidators): StatementNode {
   if (code.length > 40000 || code.split('\n').length > 600) throw new Error('Screen program is full. Export and reset.');

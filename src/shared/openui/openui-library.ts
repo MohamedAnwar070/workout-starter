@@ -11,4 +11,5 @@ export const OPENUI_LIBRARY = {
   Timer: { args: ["label", "seconds", "image"], required: 2 },
   Cue: { args: ["text"], required: 1 },
   FollowUps: { args: ["prompts"], required: 1 },
+  SessionMap: { args: ["caption"], required: 0 },
 } as const satisfies Record<string, StatementSpec>;
