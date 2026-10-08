@@ -7,7 +7,7 @@ import { splitReply } from '../shared/openui/document.js';
 import type { StatementNode } from '../shared/openui/openui-model.js';
 import { redactValue } from '../shared/redact.js';
 import { renderComponent } from './components.js';
-import { byId,el } from './dom.js';
+import { button,byId,el } from './dom.js';
 
 type Config={providers:ProviderStatus[];token:string};let config:Config|undefined;
 const timers=new TimerLedger();let previousTimers=new Map<string,TimerListEntry>(),updates:(()=>void)[]=[],paused=false,pausedTimers:string[]=[],renderKey='',lastClear=0;
@@ -37,12 +37,12 @@ function timerAction(id:string,action:'start'|'pause'|'reset'|'finish'){
 function render(){
   if(config){const selected=config.providers.find(p=>p.id===c.provider)!;byId('mode').textContent=c.provider==='mock'?'MOCK · NO MODEL CALLS':selected.enabled?'LIVE WHEN SENT':'SETUP / BLOCKED';byId('provider-description').textContent=selected.message;byId('consent-wrap').hidden=c.provider==='mock'||!selected.enabled;byId('consent-label').textContent=c.provider==='claude-cli'?'Use my subscription quota on Send/Retry; I reviewed the host-policy limits.':'Use my API budget on Send/Retry.';byId<HTMLInputElement>('consent').checked=c.consent;byId<HTMLButtonElement>('send').disabled=!selected.enabled||(c.provider!=='mock'&&!c.consent)||paused;byId('mock-controls').hidden=c.provider!=='mock';byId('sample').hidden=c.provider!=='mock';}
   byId('send').textContent=c.pending?'Send update ↗':'Send ↗';byId<HTMLButtonElement>('cancel').disabled=!c.pending;byId('pending').hidden=!c.pending;byId('status').textContent=c.pending?'Thinking… type an update to interrupt':c.error?'Needs attention':'Ready when you are';byId('error').hidden=!c.error;byId('error-message').textContent=c.error;
-  const transcript=byId('transcript');transcript.replaceChildren();if(!c.events.length)transcript.append(el('p','Start with the wiring fixture, or configure a model after editing your skill. The workout experience is yours to build.','micro'));
-  for(const event of c.events){if(event.kind==='input'||event.kind==='response'){const n=el('div','','message '+(event.kind==='input'?'user':'assistant'));n.append(el('span',event.kind==='input'?'You':'Reply','who'),el('p',event.text??splitReply(event.result!.turn.reply).prose??''));transcript.append(n);}else if(event.text)transcript.append(el('p',event.text,'event'));else if(event.kind==='interrupted'||event.kind==='cancelled')transcript.append(el('p',event.kind==='interrupted'?'Previous reply interrupted. Your messages are kept.':'Reply cancelled.','event'));}
+  const transcript=byId('transcript');transcript.replaceChildren();if(!c.events.length)transcript.append(el('p','Say where you are and how long you have, or tap Start a session. Mock runs offline; the wiring sample is still below.','micro'));
+  for(const event of c.events){if(event.kind==='input'||event.kind==='response'){const prose=event.text??splitReply(event.result!.turn.reply).prose;if(event.kind==='response'&&!prose)continue;const n=el('div','','message '+(event.kind==='input'?'user':'assistant'));n.append(el('span',event.kind==='input'?'You':'Aira','who'),el('p',prose??''));transcript.append(n);}else if(event.text)transcript.append(el('p',event.text,'event'));else if(event.kind==='interrupted'||event.kind==='cancelled')transcript.append(el('p',event.kind==='interrupted'?'Previous reply interrupted. Your messages are kept.':'Reply cancelled.','event'));}
   transcript.scrollTop=transcript.scrollHeight;syncTimers();
   const screens=c.document.screens,index=screens.findIndex(s=>s.key===c.document.cursor),key=c.document.echo()+String(paused);
   if(key!==renderKey || !byId('screen').childNodes.length){renderKey=key;updates=[];const surface=byId('screen');surface.replaceChildren();const current=c.document.current;
-    if(!current){const n=el('div','','empty');n.append(el('p','A BLANK CANVAS, WITH THE WIRING DONE','eyebrow'),el('h3','Your workout starts here.'),el('p','The provided sample checks the stepper, timer and state. It is not a finished workout design.'));surface.append(n);}
+    if(!current){const n=el('div','','empty');n.append(el('p','AIRA · WORKOUT','eyebrow'),el('h3','Your workout starts here.'),el('p','Tell me where you are and how long you have. I\'ll shape the rest.'),button('Start a session',()=>send('Start a session'),'primary'));surface.append(n);}
     else for(const node of current.props.children as StatementNode[])if(node.name!=='Cue')surface.append(renderComponent(node,{send,timers,timerAction,updates,paused}));
     const progress=byId('progress');progress.replaceChildren();if(screens.length>1)for(let i=0;i<screens.length;i++){const n=el('span','',''+(i===index?'active':i<index?'past':''));n.setAttribute('aria-label',`Screen ${i+1}${i===index?', current':''}`);progress.append(n);}
   }

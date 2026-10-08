@@ -45,7 +45,7 @@ test('clear and replacement reset namespace, while Cue is separate text',()=>{
 test('mock is wiring only; values and cursor stay coherent under change',()=>{
  const doc=new ScreenDocument();doc.apply(mockTurn(req('/demo'),fixture).reply);doc.apply(mockTurn(req('next',{ui_state:doc.echo(),client_events:[]}),fixture).reply);assert.equal(doc.cursor,'page2');
  doc.apply(mockTurn(req('change value to 6',{ui_state:doc.echo(),client_events:[]}),fixture).reply);assert.equal(doc.cursor,'page2');assert(doc.echo().includes('count1 = Keyword("6"'));assert(doc.echo().includes('count2 = Keyword("6"'));
- assert(mockTurn(req('create a real workout'),fixture).reply.includes('does not read your skill'));
+ assert(mockTurn(req('create a real workout'),fixture).reply.includes('Where are you right now?'));
 });
 test('source-derived timer clock survives navigation, pauses/resumes, changed duration resets',()=>{
  let now=0;const ledger=new TimerLedger(()=>now);ledger.ensure('rest',{label:'Rest',seconds:10});ledger.start('rest');now=3000;assert.equal(ledger.list()[0].remaining,7);

@@ -1,6 +1,6 @@
 # AiRA workout starter
 
-A local browser harness derived from AiRA API and AiRA client code. Read the short assignment in [docs/EXERCISE.md](docs/EXERCISE.md).
+A local browser harness derived from AiRA API and AiRA client code. Read the short assignment in [docs/EXERCISE.md](docs/EXERCISE.md) and the completed [Submission Explanation](docs/EXPLANATION.md).
 
 ## Run
 
@@ -13,7 +13,7 @@ npm start
 
 Open http://127.0.0.1:4319. Stop with Ctrl+C. Change `PORT` in a local `.env` if needed.
 
-The app starts in Mock and needs no account or key. **Load wiring sample** displays generic component examples. Mock accepts `/demo`, `next`, `back`, and `change value to 6`; it does not interpret the skill or arbitrary messages. Use your editor to change files. Prompt/skill edits load on the next request; source changes need a restart and browser reload.
+The app starts in Mock and needs no account or key. Tap **Start a session**, or type a situation such as `hotel room, 10 minutes, quiet`, `legs, 2 min` or `I have a meeting in 10 minutes`. Mock runs a deterministic offline version of the workout flow (`src/server/mock.ts`): it reads place, minutes, focus and mood from the message, trims or rebalances the session on **Shorter, please** / **Give me longer rests**, and builds the receipt on **How did it go?** from the browser's real timer states. It follows the same rules as the skill but does not read it; only a live provider interprets `skills/workout.md`. **Load wiring sample** still displays the generic component examples, and `/demo`, `next`, `back` and `change value to 6` still work. Use your editor to change files. Prompt/skill edits load on the next request; source changes need a restart and browser reload.
 
 ## Files
 

@@ -18,7 +18,7 @@ export function providerStatuses(config: Config): ProviderStatus[] {
   const api = config.allowLive && Boolean(config.key);
   const cli = config.claude.enabled && config.claude.profileAcknowledged && Boolean(config.claude.binary);
   return [
-    { id: 'mock', label: 'Mock', enabled: true, model: 'wiring-fixture-v1', message: 'Deterministic wiring fixture. Your skill is not evaluated by a model.' },
+    { id: 'mock', label: 'Mock', enabled: true, model: 'wiring-fixture-v1', message: 'Deterministic offline workout script and wiring fixture. Your skill is not evaluated by a model.' },
     { id: 'openai-api', label: 'OpenAIAPI', enabled: api, model: config.model, message: api ? 'Uses your API budget when you send. Messages and skill are sent to OpenAI.' : 'Set ALLOW_LIVE_API=true and OPENAI_API_KEY in local .env, then restart. See README.' },
     { id: 'claude-cli', label: 'ClaudeCLI', enabled: cli, model: config.claude.model || 'claude-cli-default (unresolved)', message: cli ? 'Uses your Claude-plan login when you send. Restricted tool profile; managed host hooks may still run. CLI support/login are checked before each request.' : 'Set ALLOW_CLAUDE_CLI, CLAUDE_CLI_PATH and CLI_PROFILE_ACKNOWLEDGED in local .env. See docs/RUNTIMES.md.' },
     { id: 'codex-cli', label: 'CodexCLI', enabled: false, model: 'unresolved · execution blocked', message: CODEX_BLOCKER },
