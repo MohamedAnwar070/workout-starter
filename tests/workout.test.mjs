@@ -60,10 +60,23 @@ test('the receipt counts the real timer snapshot and never invents a result',()=
   assert(r.line('land_k').includes('"0 of 3"'));
   assert.match(r.say('How did it go?',[snapshot('warm_t','done',0,120),snapshot('b1_t','paused',40,210),snapshot('r1_t','stopped',60,60),snapshot('b2_t','stopped',210,210),'Reset the timer for Block one to 3 minutes 30 seconds.']),/One of three/);
   assert(r.doc.echo().includes('Block one stopped with 40 s left.'));assert(r.doc.echo().includes('Block one was reset once.'));
-  assert.equal(r.say('How did it go?',[]),"I can't see the clocks from here, so I won't guess how it went.");
+  assert.equal(r.say('How did it go?',[]),"I can't see the clocks from here, so I won't guess how it went.");assert(r.line('land_k').includes('"1 of 3"'),'unknown clocks leave the receipt as it was');
 });
 
 test('pain stops the session instead of planning more',()=>{
   const r=run();r.say('Gym, 30 minutes, ready to go');r.say('my knee hurts');
   assert.deepEqual(r.doc.screens.map(s=>s.key),['s_stop']);assert(!r.doc.echo().includes('Timer('));
+});
+
+test('skill examples stay identical to what the offline director produces',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const skill=await readFile(new URL('../skills/workout.md',import.meta.url),'utf8');
+  const examples=[...skill.matchAll(/```openui\n([\s\S]*?)\n```/g)].map(m=>m[1]);
+  const norm=code=>code.split('\n').filter(l=>l.trim()&&l.trim()!=='root = Screens([])').map(l=>l.replace(/\s+/g,'')).sort();
+  const turn=(text,ui_state='',client_events=[])=>splitReply(mockTurn({messages:[{role:'user',content:text}],state:{ui_state,client_events},provider:'mock',consent:false,fault:'none'},'').reply).fences.join('\n');
+  assert.deepEqual(norm(examples[0]),norm(turn('hi')),'example 1: picker');
+  assert.deepEqual(norm(examples[1]),norm(turn('Hotel room, 10 minutes, keep it quiet')),'example 2: full session');
+  const r=run();r.say('Hotel room, 10 minutes, keep it quiet');r.doc.move(5);
+  const events=[snapshot('warm_t','done',0,120),snapshot('b1_t','done',0,210),snapshot('r1_t','done',0,60),snapshot('b2_t','paused',35,150)];
+  assert.deepEqual(norm(examples[3]),norm(turn('How did it go?',r.doc.echo(),events)),'example 4: receipt');
 });

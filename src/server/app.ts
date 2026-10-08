@@ -82,6 +82,8 @@ export function createApp(config: Config, transport: typeof fetch = fetch, cliTr
           const preview = new ScreenDocument();
           try { if (input.state.ui_state) preview.apply('```openui\n' + input.state.ui_state + '\n```'); preview.apply(safe.turn.reply); }
           catch { throw new PublicError('SCHEMA', 'The response has an invalid OpenUI screen. The previous screen is kept. Retry or check your component/skill.'); }
+          // A screen written without its fence would be shown to the person as raw code in the chat.
+          if (/^\s*[A-Za-z_]\w*\s*=\s*[A-Z]\w*\(/m.test(preview.prose)) throw new PublicError('SCHEMA', 'The response put its screen outside an openui fence. The previous screen is kept. Retry this turn.');
           if (!controller.signal.aborted) json(res, 200, safe);
           else if (!res.destroyed) json(res, 408, { error: 'The request timed out. Retry this turn.' });
         } finally { clearTimeout(timeout); active--; }

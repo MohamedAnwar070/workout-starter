@@ -29,12 +29,54 @@ A workout is a hands-busy moment. So Aira reads the situation from one message, 
 - `src/web/`: a restyled canvas with a short fade between screens that turns off for reduced-motion users. The empty state has a **Start a session** button, and empty chat replies are hidden.
 - `tests/workout.test.mjs` and `tests/browser/workout.spec.mjs` cover the experience itself: timer sums for every length from 1 to 60 minutes, situation reading, future-only patches, the receipt and the safety stop.
 
+## Testing the AI, not just the code
+
+The mock proves the experience; only a live model proves the skill. `scripts/eval.mjs` (`npm run eval -- --consent`) sends nine fixed situations to the real model, using the app's own prompt loader and provider. Between turns it simulates what the browser would report (steps, timers started, finished or skipped, and the per-timer snapshot), then checks every reply against the skill's rules. The situations are:
+
+- a greeting;
+- a chip;
+- hotel, then "Shorter" mid-block, then the receipt;
+- gym, then longer rests;
+- 1-minute legs;
+- a meeting in 10 minutes;
+- everything skipped;
+- pain mid-session;
+- a prompt injection.
+
+Results on the same nine scenarios (`runs/eval-*.json`):
+
+| Skill · model | Scenarios fully correct | Checks passed |
+|---|---|---|
+| Starter skill · gpt-4o-mini | 0/9 | 17/36 |
+| This skill · gpt-4o-mini | 3/9 | 104/121 |
+| This skill · gpt-4.1-mini | 3/9 | 87/98 |
+| This skill · gpt-4.1 | 5/9 | 116/121 |
+
+Check totals differ because a turn that fails outright skips the checks that depend on it. Single runs vary by a few checks.
+
+What the evals changed in the skill:
+
+- **Fence first, sentence last.** Small models often wrote the sentence and stopped, leaving the screen unchanged. Putting the screen first removed that failure entirely.
+- **Look up the plan, don't calculate it.** Models are unreliable at arithmetic, so the skill carries an exact plan table generated from the same planner as the mock.
+- **Receipts count after listing.** gpt-4.1 once headlined "1 of 3" over a list showing two finished blocks. Writing the list first, then counting it, fixed that in the live browser run.
+- **Explicit name reuse.** One model renamed timers during a patch, which would silently reset a running clock. The skill now says so directly.
+
+What still fails, honestly:
+
+- the longest plans occasionally drift by a minute;
+- one model renames timers on "longer rests";
+- an occasional cue runs to ten words;
+- in the live browser run, the receipt said a never-started rest "stopped with 1 min left" and offered "shorter" even though most blocks ran;
+- gpt-4o-mini sometimes breaks the reply format itself.
+
+A platform fix would move timer arithmetic out of the model entirely, either as a planner tool or a validate-and-retry step on the server. I'd want to discuss that rather than build it into this slice.
+
 ## Runtime modes tested
 
 | Mode | Status |
 |---|---|
-| **Mock** | Tested on Linux (Node 22, headless Chromium). `npm run check`: 45/45. `npm run test:ui`: 10/10, including the full workout flow. Screenshots `04`–`07` in `evidence/screenshots/` come from that run. |
-| **OpenAIAPI** | _Not yet verified with the current skill. Update this line after a live run._ |
+| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 46/46. `npm run test:ui`: 10/10, including the full workout flow. Screenshots 04–07 come from that run. |
+| **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini and gpt-4.1 (table above), plus one browser session on gpt-4.1 exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. gpt-4.1 is the model I'd recommend; gpt-4o-mini is not reliable enough for this skill. |
 | **ClaudeCLI** | Not tested. |
 | **CodexCLI** | Disabled by the starter. |
 

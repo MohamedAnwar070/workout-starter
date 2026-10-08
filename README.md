@@ -35,6 +35,8 @@ npm run test:ui
 npm run package
 ```
 
+`npm run eval -- --consent` checks the skill against a live OpenAI model: nine fixed situations, multi-turn, with the browser's events and timer snapshots simulated between turns, and every reply checked against the skill's rules (timer arithmetic, block counts, future-only patches, honest receipts, safety). It uses API budget, so it needs `ALLOW_LIVE_API=true` in `.env` and the explicit `--consent` flag. Add `--model gpt-4.1` to compare models, or `--root <dir>` to evaluate another copy of `prompts/` and `skills/`. Results are written to `runs/eval-<label>.json`.
+
 The browser checks start a mock server on port 4320. To use an installed Chrome instead, set `PLAYWRIGHT_CHROME_PATH` to its absolute executable path.
 
 Packaging writes `output/workout-source.zip` locally. It includes source and records changes against this starter's baseline; it excludes `.env`, dependencies, build output and repository history. It does not submit anything. Builder tools can export a local run; optional run JSON files can be placed in `runs/`. Keep credentials out of source and exports.

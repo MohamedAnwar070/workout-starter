@@ -179,7 +179,7 @@ function sessionTurn(sit: Situation, prose?: string): Turn {
     ...steps.flatMap(step => stepScreen(step, steps)),
     ...closeScreen(steps),
   ];
-  return { reply: reply + '\n' + clear + '\n' + fence(doc.join('\n')) };
+  return { reply: clear + '\n' + fence(doc.join('\n')) + '\n' + reply };
 }
 
 function pickerTurn(prose: string): Turn {
@@ -191,7 +191,7 @@ function pickerTurn(prose: string): Turn {
     st('hello_f', 'FollowUps', [['Hotel room, 10 minutes, keep it quiet', 'Home, 20 minutes, a little tired', 'Gym, 30 minutes, ready to go', '4 minutes before a meeting']]),
     refs('s_hello', 'Screen', ['hello_t', 'hello_d', 'hello_cue', 'hello_f']),
   ];
-  return { reply: prose + '\n' + clear + '\n' + fence(doc.join('\n')) };
+  return { reply: clear + '\n' + fence(doc.join('\n')) + '\n' + prose };
 }
 
 function safetyTurn(): Turn {
@@ -202,7 +202,7 @@ function safetyTurn(): Turn {
     st('stop_cue', 'Cue', ["Stopping here. That matters more than the session."]),
     refs('s_stop', 'Screen', ['stop_a', 'stop_t', 'stop_cue']),
   ];
-  return { reply: "Let's stop here; this prototype can't give health advice, so please check with someone qualified.\n" + clear + '\n' + fence(doc.join('\n')) };
+  return { reply: clear + '\n' + fence(doc.join('\n')) + "\nLet's stop here; this prototype can't give health advice, so please check with someone qualified." };
 }
 
 // ---- Reading back a session the mock built earlier ----
@@ -224,7 +224,7 @@ function readSession(doc: ScreenDocument): Session | undefined {
 // when their hands are free there (arrival, rest, close); a running block is never re-rendered.
 function patchTurn(session: Session, steps: Step[], alert: string, prose: string): Turn {
   const { index, keys } = session, last = keys.length - 1;
-  if (index === last) return { reply: "You're at the close, so there's nothing ahead to change." };
+  if (index === last) return { reply: fence(`root = Screens([${keys.join(', ')}], ${session.cursor})`) + "\nYou're at the close, so there's nothing ahead to change." };
   const current = keys[index], handsFree = current === 's_ready' || current === 's_land' || /^s_r\d$/.test(current);
   const target = handsFree ? index : Math.min(index + 1, last);
   const out: string[] = [];
@@ -235,7 +235,7 @@ function patchTurn(session: Session, steps: Step[], alert: string, prose: string
   });
   out.push(...closeScreen(steps, target === last ? alert : undefined));
   out.push(`root = Screens([${keys.join(', ')}], ${session.cursor})`);
-  return { reply: prose + '\n' + fence(out.join('\n')) };
+  return { reply: fence(out.join('\n')) + '\n' + prose };
 }
 
 // Takes `amount` seconds from the blocks ahead, last block first, never below one minute.
@@ -283,7 +283,7 @@ const SNAPSHOT = /^Simulated timer (\w+) \((.*)\): (stopped|running|paused|done)
 function receipt(session: Session, events: string[]): Turn {
   const clocks = new Map<string, { status: string; remaining: number }>();
   for (const event of events) { const m = event.match(SNAPSHOT); if (m) clocks.set(m[1], { status: m[3], remaining: Number(m[4]) }); }
-  if (!clocks.size) return { reply: "I can't see the clocks from here, so I won't guess how it went." };
+  if (!clocks.size) return { reply: fence(`root = Screens([${session.keys.join(', ')}], ${session.cursor})`) + "\nI can't see the clocks from here, so I won't guess how it went." };
   const resets = new Map<string, number>();
   for (const event of events) { const m = event.match(/^Reset the timer for (.+) to /); if (m) resets.set(m[1], (resets.get(m[1]) ?? 0) + 1); }
   const work = active(session.steps), rests = session.steps.filter(s => s.kind === 'rest');
@@ -309,13 +309,13 @@ function receipt(session: Session, events: string[]): Turn {
     : `${cap(words(done.length))} of ${words(n)} block clocks ran to zero.`;
   const doc = [
     st('land_t', 'Text', ["Here's what ran.", 'title']),
-    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'block clocks ran to zero · simulated']),
     ...items.map((text, i) => st(`land_i${i + 1}`, 'ListItem', [text, 'bullet'])),
     refs('land_l', 'List', items.map((_, i) => `land_i${i + 1}`)),
+    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'block clocks ran to zero · simulated']),
     st('land_f2', 'FollowUps', [[...new Set(['Same again tomorrow', next])]]),
     refs('s_land', 'Screen', ['land_t', 'land_k', 'land_l', 'land_cue', 'land_f2']),
   ];
-  return { reply: headline + '\n' + fence(doc.join('\n')) };
+  return { reply: fence(doc.join('\n')) + '\n' + headline };
 }
 
 // Earlier situation, for "same again" style requests. Chip phrases are skipped so
