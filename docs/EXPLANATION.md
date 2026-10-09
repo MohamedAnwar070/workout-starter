@@ -8,7 +8,7 @@
   - ClaudeCLI live: the final skill passed 27/27 scenario runs (393/393 checks), plus a recorded browser session in `runs/after.json`.
   - OpenAIAPI live: earlier skill revisions only; gpt-5.2 recommended.
   - Not tested on Windows or macOS.
-- **Try it:** `npm ci && npm start`, open http://127.0.0.1:4319, tap **Start a session**.
+- **Where to start:** in Mock, tap **Start a session**.
 
 The details follow.
 
