@@ -8,6 +8,7 @@ import type { StatementNode } from '../shared/openui/openui-model.js';
 import { redactValue } from '../shared/redact.js';
 import { renderComponent } from './components.js';
 import { button,byId,el,statusPill } from './dom.js';
+import { STORAGE_KEYS,UI_TEXT } from './constants.js';
 
 type Config={providers:ProviderStatus[];token:string};let config:Config|undefined;
 // Focus mode: while a session's clock screen is on, the workout takes the whole window.
@@ -50,16 +51,16 @@ function render(){
   transcript.scrollTop=transcript.scrollHeight;syncTimers();
   const screens=c.document.screens,index=screens.findIndex(s=>s.key===c.document.cursor),key=c.document.echo()+String(paused);
   if(key!==renderKey || !byId('screen').childNodes.length){renderKey=key;updates=[];const surface=byId('screen');surface.replaceChildren();const current=c.document.current;
-    if(!current){const n=el('div','','empty');n.append(el('p','AIRA · WORKOUT','eyebrow'),el('h3','Your workout starts here.'),el('p','Tell me where you are and how long you have. I\'ll shape the rest.'),button('Start a session',()=>send('Start a session'),'primary'));surface.append(n);}
+    if(!current){const n=el('div','','empty');n.append(el('p','AIRA · WORKOUT','eyebrow'),el('h3','Your workout starts here.'),el('p','Tell me where you are and how long you have. I\'ll shape the rest.'),button(UI_TEXT.startSession,()=>send(UI_TEXT.startSession),'primary'));surface.append(n);}
     else{const plan=()=>c.document.screens.flatMap((s,i)=>(s.props.children as StatementNode[]).filter(n=>n.name==='Timer').map(n=>({id:n.key,label:String(n.props.label),seconds:Number(n.props.seconds),current:i===index})));
       for(const node of current.props.children as StatementNode[])if(node.name!=='Cue')surface.append(renderComponent(node,{send,timers,timerAction,updates,paused,plan}));}
     const progress=byId('progress');progress.replaceChildren();if(screens.length>1)for(let i=0;i<screens.length;i++){const n=el('span','',''+(i===index?'active':i<index?'past':''));n.setAttribute('aria-label',`Screen ${i+1}${i===index?', current':''}`);progress.append(n);}
   }
-  byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;const ended=finished&&index===screens.length-1;byId<HTMLButtonElement>('next').disabled=paused||ended;byId('next').textContent=ended?'Session ended':index===screens.length-1?'Finish preview':'Next →';
+  byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;const ended=finished&&index===screens.length-1;byId<HTMLButtonElement>('next').disabled=paused||ended;byId('next').textContent=ended?UI_TEXT.sessionEnded:index===screens.length-1?UI_TEXT.finish:UI_TEXT.next;
   const children=(c.document.current?.props.children as StatementNode[]|undefined)??[];
   // A SessionMap marks a planned session (the wiring sample has none), and a Timer marks a clock screen.
   const clockScreen=children.some(n=>n.name==='Timer')&&isSession();
-  setFocus(clockScreen&&!focusOptOut&&!c.error);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?'Show chat':'Focus';
+  setFocus(clockScreen&&!focusOptOut&&!c.error);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?UI_TEXT.showChat:UI_TEXT.focus;
   byId<HTMLButtonElement>('pause').disabled=!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
   const cues=(c.document.current?.props.children as StatementNode[]??[]).filter(n=>n.name==='Cue').map(n=>String(n.props.text));byId('spoken').textContent=cues.join(' ')||c.document.prose||'Current-screen Cues appear here as text. No audio is produced.';
   byId('state-json').textContent=JSON.stringify({ui_state:c.document.echo(),client_events:c.clientEvents,timers:timers.list()},null,2);byId<HTMLButtonElement>('export').disabled=c.pending||!c.events.length;
@@ -83,7 +84,26 @@ byId<HTMLInputElement>('consent').addEventListener('change',event=>{c.consent=(e
 byId('apply-patch').addEventListener('click',()=>{try{const raw=byId<HTMLTextAreaElement>('patch').value;c.document.apply(raw.includes('```')?raw:'```openui\n'+raw+'\n```');c.localEvent('Builder applied local OpenUI data: '+raw);byId('patch-status').textContent='Patch accepted. This is local fixture evidence, not a model run.';}catch{byId('patch-status').textContent='Invalid patch. Previous screen kept. Check names, arguments and catalog.';}});
 byId('export').addEventListener('click',()=>{const label=byId<HTMLSelectElement>('run-label').value;const payload={format:'aira-workout-run-v1',label,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,selectedProvider:c.provider,note:byId<HTMLTextAreaElement>('note').value,events:c.events,state:{ui_state:c.document.echo(),client_events:c.clientEvents},timers:timers.list()};const url=URL.createObjectURL(new Blob([JSON.stringify(redactValue(payload),null,2)],{type:'application/json'}));const link=el('a');link.href=url;link.download=label+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('export-status').textContent=`Downloaded ${label}.json. Review and move it into runs/.`;});
 async function start(){render();try{const response=await fetch('/api/config');if(!response.ok)throw new Error();config=await response.json();const select=byId<HTMLSelectElement>('provider');select.replaceChildren();for(const p of config!.providers){const option=el('option',p.label+(p.enabled?'':' · setup / blocked'));option.value=p.id;select.append(option);}select.value='mock';select.disabled=false;render();}catch{byId('status').textContent='Could not connect. Restart the local server and reload.';}}
-byId('status-tray').append(statusPill('pending','Aira is thinking','this screen stays put','busy'),statusPill('paused','Preview paused','your place is kept'));
+byId('status-tray').append(statusPill('pending',UI_TEXT.pending,UI_TEXT.pendingDetail,'busy'),statusPill('paused',UI_TEXT.paused,UI_TEXT.pausedDetail));
+// Theme: follow the system unless the person picked one; the pick is remembered in this browser only.
+// The CSS does the rest through color-scheme, so there is no flash of the wrong theme on load.
+const systemDark=matchMedia('(prefers-color-scheme: dark)');
+const themeNow=()=>document.documentElement.dataset.theme??(systemDark.matches?'dark':'light');
+function applyTheme(theme?:string){
+  if(theme==='light'||theme==='dark')document.documentElement.dataset.theme=theme;else delete document.documentElement.dataset.theme;
+  const dark=themeNow()==='dark',toggle=byId('theme');toggle.setAttribute('aria-checked',String(dark));toggle.setAttribute('aria-label',UI_TEXT.themeSwitch);toggle.title=dark?UI_TEXT.themeToLight:UI_TEXT.themeToDark;
+}
+// The new theme fades in over the old one (no dip in between); instant for reduced motion or older browsers.
+function switchTheme(theme:'light'|'dark'){
+  const change=()=>{try{localStorage.setItem(STORAGE_KEYS.theme,theme);}catch{}applyTheme(theme);};
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!('startViewTransition' in document)){change();return;}
+  const root=document.documentElement;root.classList.add('theme-switching');
+  document.startViewTransition(change).finished.finally(()=>root.classList.remove('theme-switching'));
+}
+let savedTheme:string|null=null;try{savedTheme=localStorage.getItem(STORAGE_KEYS.theme);}catch{}
+applyTheme(savedTheme??undefined);
+byId('theme').addEventListener('click',()=>switchTheme(themeNow()==='dark'?'light':'dark'));
+systemDark.addEventListener('change',()=>applyTheme(document.documentElement.dataset.theme));
 // App shell: the workspace fills the window below the header and mode bar, whatever their height
 // (the consent row appears in live mode, text wraps on phones), so the CSS gets it measured.
 function measureShell(){const w=document.querySelector<HTMLElement>('.workspace');if(w)document.documentElement.style.setProperty('--shell-top',`${Math.round(w.getBoundingClientRect().top+scrollY)}px`);}

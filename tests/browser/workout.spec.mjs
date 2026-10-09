@@ -70,3 +70,16 @@ test('offline workout fits a phone and stops on pain',async({page})=>{
  await page.locator('#message').fill('my knee hurts');await page.locator('#send').click();await expect(page.locator('#pending')).toBeHidden();
  await expect(page.locator('#screen')).toContainText("Stop here. This prototype can't give health advice.");await expect(page.locator('#navigation')).toBeHidden();await expect(page.locator('body')).not.toHaveClass(/focus/);
 });
+
+test('dark theme: the toggle switches every surface, is remembered, and the workout stays readable',async({page})=>{
+ await page.setViewportSize({width:1280,height:720});
+ const bg=()=>page.evaluate(()=>getComputedStyle(document.body).backgroundColor);const light=await bg();
+ await expect(page.getByRole('switch',{name:'Dark theme',exact:true})).toHaveAttribute('aria-checked','false');await page.getByRole('switch',{name:'Dark theme',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');expect(await bg()).not.toBe(light);
+ await expect(page.getByRole('switch',{name:'Dark theme',exact:true})).toHaveAttribute('aria-checked','true');
+ await page.reload();await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await tap(page,'Start a session');await tap(page,'Hotel room, 10 minutes, keep it quiet');await page.screenshot({path:shots+'/10-dark-arrival.png'});
+ await page.locator('#next').click();await expect(page.locator('body')).toHaveClass(/focus/);await page.screenshot({path:shots+'/11-dark-focus.png'});
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:shots+'/12-dark-mobile.png'});
+});
+

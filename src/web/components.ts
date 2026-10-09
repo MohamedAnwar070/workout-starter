@@ -1,12 +1,13 @@
 import { el, button } from './dom.js';
 import type { StatementNode } from '../shared/openui/openui-model.js';
 import type { TimerLedger } from '../shared/openui/timer-store.js';
+import { RING, SVG_NS, UI_TEXT } from './constants.js';
 export type PlanStep = { id: string; label: string; seconds: number; current: boolean };
 export type Context = { send: (text:string)=>void; timers: TimerLedger; timerAction: (id:string, action:'start'|'pause'|'reset'|'finish')=>void; updates: (()=>void)[]; paused: boolean; plan: ()=>PlanStep[] };
-const SVG='http://www.w3.org/2000/svg',RING=2*Math.PI*54;
-function ring(){const svg=document.createElementNS(SVG,'svg');svg.setAttribute('viewBox','0 0 120 120');svg.setAttribute('aria-hidden','true');svg.classList.add('timer-ring');
-  const circle=(name:string)=>{const n=document.createElementNS(SVG,'circle');n.setAttribute('cx','60');n.setAttribute('cy','60');n.setAttribute('r','54');n.classList.add(name);svg.append(n);return n;};
-  circle('track');const arc=circle('arc');arc.setAttribute('stroke-dasharray',String(RING));return {svg,arc};}
+const RING_LENGTH=2*Math.PI*RING.radius,RING_CENTRE=String(RING.viewBox/2);
+function ring(){const svg=document.createElementNS(SVG_NS,'svg');svg.setAttribute('viewBox',`0 0 ${RING.viewBox} ${RING.viewBox}`);svg.setAttribute('aria-hidden','true');svg.classList.add('timer-ring');
+  const circle=(name:string)=>{const n=document.createElementNS(SVG_NS,'circle');n.setAttribute('cx',RING_CENTRE);n.setAttribute('cy',RING_CENTRE);n.setAttribute('r',String(RING.radius));n.classList.add(name);svg.append(n);return n;};
+  circle('track');const arc=circle('arc');arc.setAttribute('stroke-dasharray',String(RING_LENGTH));return {svg,arc};}
 const clock=(seconds:number)=>{const m=Math.floor(seconds/60),s=seconds%60;return m&&s?`${m} min ${s} s`:m?`${m} min`:`${s} s`;};
 // Trusted DOM ports of the source component signatures; no model-generated code.
 export const renderers: Record<string,(node:StatementNode,context:Context)=>HTMLElement> = {
@@ -21,11 +22,11 @@ export const renderers: Record<string,(node:StatementNode,context:Context)=>HTML
     n.append(el('p','SIMULATED TIMER · LOCAL ONLY','eyebrow'),el('h3',String(p.label)));
     // A ring that empties as time runs: readable from across a room, without reading digits.
     const value=el('strong'),status=el('span','','micro timer-status'),row=el('div','','row'),dial=el('div','','timer-dial'),{svg,arc}=ring();dial.append(svg,value,status);
-    const done=el('p','Time. Next when you\'re ready.','timer-done-note');
+    const done=el('p',UI_TEXT.timeUp,'timer-done-note');
     const start=button('Start simulation',()=>c.timerAction(key,'start'),'primary'),pause=button('Pause timer',()=>c.timerAction(key,'pause')),reset=button('Reset timer',()=>c.timerAction(key,'reset')),finish=button('Simulate finish',()=>c.timerAction(key,'finish'));
     row.append(start,pause,reset,finish);n.append(dial,done,row,el('p','Finishing records a local timer event.','micro'));
     const update=()=>{const entry=c.timers.list().find(t=>t.id===key);if(!entry)return;const seconds=Math.ceil(entry.remaining);value.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;status.textContent=entry.status;
-      arc.style.strokeDashoffset=String(RING*(1-entry.remaining/entry.seconds));n.classList.toggle('timer-done',entry.status==='done');done.hidden=entry.status!=='done';start.hidden=entry.status==='running'||entry.status==='paused';start.textContent=entry.status==='done'?'Restart simulation':'Start simulation';pause.hidden=entry.status==='stopped'||entry.status==='done';pause.textContent=entry.status==='paused'?'Resume timer':'Pause timer';for(const b of [start,pause,reset,finish])b.disabled=c.paused;};
+      arc.style.strokeDashoffset=String(RING_LENGTH*(1-entry.remaining/entry.seconds));n.classList.toggle('timer-done',entry.status==='done');done.hidden=entry.status!=='done';start.hidden=entry.status==='running'||entry.status==='paused';start.textContent=entry.status==='done'?'Restart simulation':'Start simulation';pause.hidden=entry.status==='stopped'||entry.status==='done';pause.textContent=entry.status==='paused'?'Resume timer':'Pause timer';for(const b of [start,pause,reset,finish])b.disabled=c.paused;};
     c.updates.push(update);update();return n;
   },
   // The model only places the map; the bar is drawn from the document's real Timers and

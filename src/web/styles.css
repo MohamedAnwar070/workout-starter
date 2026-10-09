@@ -1,20 +1,62 @@
 :root {
-  --bg: #f6f8fa;
-  --surface: #ffffff;
-  --surface-alt: #f1f5f9;
-  --surface-muted: #e2e8f0;
-  --border: #e2e8f0;
-  --border-subtle: #edf2f7;
-  --border-strong: #0f172a;
-  --text-main: #09090b;
-  --text-muted: #64748b;
-  --text-dim: #94a3b8;
-  --accent: #f97316;
-  --accent-light: #fff7ed;
-  --accent-border: #fdba74;
-  --success: #10b981;
-  --success-bg: #ecfdf5;
-  --success-border: #a7f3d0;
+  /* Theme: every colour is a token with its light and dark value side by side (light-dark()).
+     The active theme is chosen only by color-scheme: the system's by default, or data-theme
+     from the header toggle. Nothing outside this block names a colour. */
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --bg: light-dark(#f6f8fa, #0b0b0e);
+  --surface: light-dark(#ffffff, #141418);
+  --surface-alt: light-dark(#f1f5f9, #1b1b20);
+  --surface-muted: light-dark(#e2e8f0, #26262c);
+  --surface-sunken: light-dark(#f8fafc, #18181c);
+  --surface-chat: light-dark(#fafafa, #111115);
+
+  /* Borders */
+  --border: light-dark(#e2e8f0, #2a2a31);
+  --border-subtle: light-dark(#edf2f7, #1f1f25);
+  --border-strong: light-dark(#0f172a, #e4e4e7);
+  --border-hover: light-dark(#cbd5e1, #3f3f47);
+
+  /* Text */
+  --text-main: light-dark(#09090b, #f4f4f5);
+  --text-muted: light-dark(#5f7086, #a1a1aa);
+  --text-dim: light-dark(#94a3b8, #71717a);
+
+  /* Ink: the strong foreground used for primary buttons, the user's bubbles, pills and clocks */
+  --ink: light-dark(#09090b, #f4f4f5);
+  --ink-hover: light-dark(#27272a, #d4d4d8);
+  --ink-faded: light-dark(#94a3b8, #52525b);
+  --on-ink: light-dark(#ffffff, #09090b);
+
+  /* Tracks: empty progress, ring and map segments */
+  --track: light-dark(#e2e8f0, #2a2a31);
+  --track-soft: light-dark(#eef2f6, #202027);
+  --track-strong: light-dark(#cbd5e1, #3f3f47);
+
+  /* Accent (alerts, labels) and success (done, live badge) */
+  --accent: light-dark(#f97316, #fb923c);
+  --accent-light: light-dark(#fff7ed, #2a1a0e);
+  --accent-border: light-dark(#fdba74, #7c3b12);
+  --accent-text: light-dark(#9a3412, #fdba74);
+  --success: light-dark(#10b981, #34d399);
+  --success-bg: light-dark(#ecfdf5, #0d2a20);
+  --success-border: light-dark(#a7f3d0, #14532d);
+  --success-text: light-dark(#047857, #6ee7b7);
+  --success-ring: light-dark(#10b98147, #34d39959);
+
+  /* Shadows */
+  --shadow-color: light-dark(#0000000d, #00000080);
+  --shadow-color-strong: light-dark(#0000001f, #000000a6);
+  --shadow-xs: 0 1px 2px var(--shadow-color);
+  --shadow-sm: 0 2px 4px var(--shadow-color), 0 1px 2px var(--shadow-color);
+  --shadow-md: 0 4px 12px var(--shadow-color), 0 1px 3px var(--shadow-color);
+  --shadow-card: 0 10px 30px -5px var(--shadow-color), 0 2px 6px -1px var(--shadow-color);
+  --shadow-button: 0 2px 4px var(--shadow-color-strong);
+  --shadow-button-hover: 0 4px 8px var(--shadow-color-strong);
+  --shadow-inset: inset 0 1px 2px var(--shadow-color);
+
+  /* Type, shape, motion */
   --font-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Menlo, Consolas, monospace;
   --radius-xs: 6px;
@@ -22,11 +64,18 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-full: 9999px;
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   --transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Breakpoints (media queries cannot read custom properties, so they are written out):
+     narrow ≤ 820px wide; short windows ≤ 900, ≤ 760, ≤ 660px tall. */
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * {
@@ -36,7 +85,7 @@
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+  background-image: radial-gradient(var(--track) 1px, transparent 1px);
   background-size: 24px 24px;
   color: var(--text-main);
   font-family: var(--font-sans);
@@ -84,6 +133,58 @@ header {
   box-shadow: var(--shadow-xs);
 }
 
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Theme switch: the knob slides across the track and turns from a sun into a moon. */
+.theme-switch,
+.theme-switch:hover:not(:disabled) {
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.theme-switch-track {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--track);
+  transition: background-color 300ms ease, border-color 300ms ease;
+}
+
+.theme-switch:hover .theme-switch-track {
+  border-color: var(--border-hover);
+}
+
+.theme-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  transition: transform 320ms cubic-bezier(0.2, 0, 0, 1), background-color 320ms ease, box-shadow 320ms ease;
+}
+
+/* Moon: the knob empties into a crescent (an inset shadow) as it reaches the right. */
+.theme-switch[aria-checked="true"] .theme-switch-knob {
+  transform: translateX(20px);
+  background: transparent;
+  box-shadow: inset -5px -3px 0 0 var(--text-main);
+}
+
 header .micro {
   font-size: 11px;
   font-weight: 700;
@@ -106,7 +207,7 @@ header .micro {
   letter-spacing: 0.12em;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin: 0 0 10px 0;
 }
 
@@ -181,8 +282,8 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--surface-sunken);
+  border-color: var(--border-hover);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
@@ -193,25 +294,25 @@ button:active:not(:disabled) {
 
 button:disabled {
   color: var(--text-dim);
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--surface-sunken);
+  border-color: var(--border);
   cursor: not-allowed;
   opacity: 0.6;
   box-shadow: none;
 }
 
 button.primary {
-  background: #09090b;
-  color: #ffffff;
-  border-color: #09090b;
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: var(--ink);
   font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-button);
 }
 
 button.primary:hover:not(:disabled) {
-  background: #27272a;
-  border-color: #27272a;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.16);
+  background: var(--ink-hover);
+  border-color: var(--ink-hover);
+  box-shadow: var(--shadow-button-hover);
 }
 
 textarea {
@@ -223,13 +324,13 @@ textarea {
   font-size: 13px;
   line-height: 1.5;
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-inset);
 }
 
 button:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #09090b;
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -245,7 +346,7 @@ input[type=checkbox] {
   width: 16px;
   height: 16px;
   vertical-align: middle;
-  accent-color: #09090b;
+  accent-color: var(--ink);
   border-radius: 4px;
   cursor: pointer;
 }
@@ -282,7 +383,7 @@ input[type=checkbox] {
 
 .provider-panel #mode {
   background: var(--success-bg);
-  color: var(--success);
+  color: var(--success-text);
   border: 1px solid var(--success-border);
 }
 
@@ -315,7 +416,7 @@ input[type=checkbox] {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  background: #fafafa;
+  background: var(--surface-chat);
 }
 
 .panel-heading {
@@ -369,8 +470,8 @@ input[type=checkbox] {
   display: inline-block;
   padding: 6px 12px;
   border-radius: var(--radius-full);
-  background: #09090b;
-  color: #ffffff;
+  background: var(--ink);
+  color: var(--on-ink);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
@@ -444,8 +545,8 @@ input[type=checkbox] {
 
 .message.user {
   align-self: flex-end;
-  background: #09090b;
-  border-color: #09090b;
+  background: var(--ink);
+  border-color: var(--ink);
   border-bottom-right-radius: 6px;
 }
 
@@ -459,7 +560,7 @@ input[type=checkbox] {
 }
 
 .message.user p {
-  color: #ffffff;
+  color: var(--on-ink);
   font-size: 14px;
   font-weight: 500;
   margin: 0;
@@ -467,7 +568,7 @@ input[type=checkbox] {
 
 .message.assistant {
   align-self: flex-start;
-  background: #ffffff;
+  background: var(--surface);
   border-bottom-left-radius: 6px;
 }
 
@@ -558,6 +659,8 @@ input[type=checkbox] {
 @media (prefers-reduced-motion: reduce) {
   #screen > * { animation: none; }
   .timer-ring .arc { transition: none; }
+  .theme-switch-track,
+  .theme-switch-knob { transition: none; }
   .status-pill,
   .status-pill--busy::before { animation: none; }
 }
@@ -578,24 +681,24 @@ input[type=checkbox] {
   height: 12px;
   min-width: 6px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--track);
 }
 
 .session-bar .segment.rest {
   height: 6px;
-  background: #eef2f6;
+  background: var(--track-soft);
 }
 
 .session-bar .segment.ran {
-  background: #09090b;
+  background: var(--ink);
 }
 
 .session-bar .segment.rest.ran {
-  background: #94a3b8;
+  background: var(--ink-faded);
 }
 
 .session-bar .segment.partial {
-  background: repeating-linear-gradient(135deg, #09090b 0 3px, #cbd5e1 3px 6px);
+  background: repeating-linear-gradient(135deg, var(--ink) 0 3px, var(--track-strong) 3px 6px);
 }
 
 .session-bar .segment.current {
@@ -626,15 +729,15 @@ input[type=checkbox] {
   width: 10px;
   height: 10px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: var(--track);
 }
 
 .session-map .legend i.ran {
-  background: #09090b;
+  background: var(--ink);
 }
 
 .session-map .legend i.partly {
-  background: repeating-linear-gradient(135deg, #09090b 0 2px, #cbd5e1 2px 4px);
+  background: repeating-linear-gradient(135deg, var(--ink) 0 2px, var(--track-strong) 2px 4px);
 }
 
 .empty {
@@ -697,7 +800,7 @@ input[type=checkbox] {
   letter-spacing: -0.05em;
   font-weight: 800;
   line-height: 1.05;
-  color: #09090b;
+  color: var(--text-main);
 }
 
 .keyword p {
@@ -713,7 +816,7 @@ input[type=checkbox] {
   padding: 12px 16px;
   background: var(--accent-light);
   border-radius: var(--radius-sm);
-  color: #9a3412;
+  color: var(--accent-text);
   font-size: 13px;
   font-weight: 600;
 }
@@ -722,7 +825,7 @@ input[type=checkbox] {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px 20px;
-  background: #f8fafc;
+  background: var(--surface-sunken);
   margin: 8px 0 0;
   box-shadow: var(--shadow-sm);
   text-align: center;
@@ -748,7 +851,7 @@ input[type=checkbox] {
   font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: -0.04em;
-  color: #09090b;
+  color: var(--text-main);
 }
 
 .timer .row {
@@ -767,7 +870,7 @@ input[type=checkbox] {
 }
 
 .timer .row button:not(.primary):hover:not(:disabled) {
-  background: #eef2f6;
+  background: var(--track-soft);
   color: var(--text-main);
 }
 
@@ -811,11 +914,11 @@ input[type=checkbox] {
 }
 
 .timer-ring .track {
-  stroke: #e2e8f0;
+  stroke: var(--track);
 }
 
 .timer-ring .arc {
-  stroke: #09090b;
+  stroke: var(--ink);
   stroke-linecap: round;
   transition: stroke-dashoffset 250ms linear, stroke 300ms ease;
 }
@@ -828,13 +931,13 @@ input[type=checkbox] {
 .timer-done .timer-done-note {
   font-size: 15px;
   font-weight: 600;
-  color: #047857;
+  color: var(--success-text);
   margin: 8px 0 0;
 }
 
 /* When the clock on screen is done, Next is the obvious next move. */
 .preview:has(.timer-done) #next {
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.28);
+  box-shadow: 0 0 0 4px var(--success-ring);
 }
 
 .timer-status {
@@ -845,7 +948,7 @@ input[type=checkbox] {
   letter-spacing: 0.08em;
   padding: 3px 10px;
   border-radius: var(--radius-full);
-  background: #e2e8f0;
+  background: var(--track);
   color: var(--text-muted);
   vertical-align: middle;
 }
@@ -859,21 +962,21 @@ input[type=checkbox] {
 .progress span {
   height: 5px;
   flex: 1;
-  background: #e2e8f0;
+  background: var(--track);
   border-radius: var(--radius-full);
   transition: background 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .progress span.active {
-  background: #09090b;
+  background: var(--ink);
 }
 
 .progress span.past {
-  background: #94a3b8;
+  background: var(--ink-faded);
 }
 
 .preview button:not(.primary) {
-  background: #ffffff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-full);
   padding: 8px 16px;
@@ -882,8 +985,8 @@ input[type=checkbox] {
 }
 
 .preview button:not(.primary):hover:not(:disabled) {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: var(--border-hover);
+  background: var(--surface-sunken);
   transform: translateY(-1px);
 }
 
@@ -904,7 +1007,7 @@ input[type=checkbox] {
   border-top: 1px solid var(--border);
   margin: 24px -24px -24px;
   padding: 14px 24px 16px;
-  background: #f8fafc;
+  background: var(--surface-sunken);
 }
 
 .spoken p {
@@ -930,9 +1033,9 @@ input[type=checkbox] {
 }
 
 #error {
-  background: #f8fafc;
+  background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-left: 3px solid #09090b;
+  border-left: 3px solid var(--ink);
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -975,7 +1078,7 @@ pre {
   max-height: 300px;
   overflow: auto;
   padding: 14px;
-  background: #f1f5f9;
+  background: var(--surface-alt);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   font-size: 12px;
@@ -1213,20 +1316,33 @@ body.focus .spoken > .micro {
 }
 
 ::view-transition-old(root) {
-  animation: 120ms ease-out both focus-fade-out;
+  animation: 120ms ease-out both view-fade-out;
 }
 
 ::view-transition-new(root) {
-  animation: 200ms ease-in 120ms both focus-fade-in;
+  animation: 200ms ease-in 120ms both view-fade-in;
 }
 
-@keyframes focus-fade-out {
+/* Changing theme: the new page fades in over the old one as a single picture, with no dip. */
+html.theme-switching .preview {
+  view-transition-name: none;
+}
+
+html.theme-switching::view-transition-old(root) {
+  animation: none;
+}
+
+html.theme-switching::view-transition-new(root) {
+  animation: 360ms ease both view-fade-in;
+}
+
+@keyframes view-fade-out {
   to {
     opacity: 0;
   }
 }
 
-@keyframes focus-fade-in {
+@keyframes view-fade-in {
   from {
     opacity: 0;
   }

@@ -2,6 +2,7 @@ import { serializeStatement } from '../shared/openui/serialize.js';
 import type { Message, RequestData, Turn } from '../shared/contracts.js';
 import { ScreenDocument } from '../shared/openui/document.js';
 import type { StatementNode } from '../shared/openui/openui-model.js';
+import { BLOCK_ACCENT, CHANGES, CHIPS, FOCUS, MEETING_PLACE, MOODS, PICKER_CHIPS, PLACES, PLAN, REST_SECONDS, SAFETY, VAGUE, WINDOW, WORD_MINUTES, type Vibe } from './workout-rules.js';
 
 // Deterministic offline director for the workout flow. It follows the same rules as
 // skills/workout.md so the experience can be tried without a model, but it never reads
@@ -9,7 +10,6 @@ import type { StatementNode } from '../shared/openui/openui-model.js';
 
 type Kind = 'warm' | 'block' | 'rest';
 type Step = { id: string; kind: Kind; label: string; seconds: number };
-type Vibe = 'quiet' | 'gentle' | 'brisk' | 'steady';
 type Situation = { minutes: number; place?: string; focus?: string; vibe: Vibe; buffer: number; capped: boolean };
 type Session = { steps: Step[]; index: number; keys: string[]; cursor: string; reading: string };
 
@@ -17,8 +17,6 @@ const fence = (code: string) => '```openui\n' + code + '\n```';
 const clear = fence('root = Screens([])');
 const st = serializeStatement;
 const refs = (name: string, component: string, children: string[]) => `${name} = ${component}([${children.join(', ')}])`;
-const ACCENT = '#C2410C';
-const REST: Record<Vibe, number> = { quiet: 60, steady: 60, gentle: 90, brisk: 30 };
 
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty'];
@@ -34,27 +32,7 @@ const active = (steps: Step[]) => steps.filter(step => step.kind !== 'rest');
 
 // ---- Reading the situation from the person's own words ----
 
-const WORD_MINUTES: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, 'twenty-five': 25, twenty: 20, thirty: 30, 'forty-five': 45, forty: 40, sixty: 60 };
 const MINUTES = new RegExp(`(\\bin\\s+)?\\b(\\d{1,3}|${Object.keys(WORD_MINUTES).join('|')})\\s*-?\\s*(?:minutes?|mins?|m)\\b`);
-const PLACES: [RegExp, string, Vibe?][] = [
-  [/hotel/, 'Hotel room', 'quiet'],
-  [/office|desk|\bwork\b|cubicle/, 'At work', 'quiet'],
-  [/\bgym\b/, 'Gym'],
-  [/bedroom/, 'Bedroom', 'quiet'],
-  [/living room|\bhome\b|\bhouse\b|apartment|\bflat\b/, 'Home'],
-  [/\bpark\b|outside|outdoors|garden|balcony|terrace/, 'Outdoors'],
-  [/meeting|\bcall\b|interview/, 'Before a meeting', 'quiet'],
-];
-const FOCUS: [RegExp, string, string | undefined][] = [
-  [/full[ -]?body|whole body/, 'Full body', undefined],
-  [/\blegs?\b|lower|glute|thigh|calf|calves/, 'Lower', 'Lower'],
-  [/chest|\barms?\b|upper|shoulder|bicep|tricep/, 'Upper', 'Upper'],
-  [/\bcore\b|\babs\b|stomach/, 'Core', 'Core'],
-  [/stretch|mobility|loosen|yoga/, 'Stretch', 'Stretch'],
-];
-const SAFETY = /\bpain|\bhurt|dizz|injur|faint|unwell|nause|can'?t breathe|\bsick\b/;
-const VAGUE = /^(hi|hey|hello|start|begin|go|workout|exercise|start a session|start a workout|start workout|let'?s go|let'?s start|let'?s work ?out|somewhere else)\b/;
-
 function minutesIn(text: string): { minutes: number; until: boolean } | undefined {
   const m = text.match(MINUTES);
   if (m) return { minutes: /^\d+$/.test(m[2]) ? Number(m[2]) : WORD_MINUTES[m[2]], until: Boolean(m[1]) };
@@ -65,31 +43,33 @@ function minutesIn(text: string): { minutes: number; until: boolean } | undefine
   return undefined;
 }
 
+const clampMinutes = (minutes: number) => Math.min(PLAN.maxMinutes, Math.max(PLAN.minMinutes, minutes));
+
 export function readSituation(text: string): Situation | undefined {
   const time = minutesIn(text);
   const place = PLACES.find(([re]) => re.test(text));
   const focus = FOCUS.find(([re]) => re.test(text));
   if (!time && !place && !focus) return undefined;
-  const vibe: Vibe = /tired|gentle|easy|slow|low energy|exhausted|sleepy|calm/.test(text) ? 'gentle'
-    : /ready to go|energ|pumped|push|intense|let'?s go/.test(text) ? 'brisk'
-    : /quiet|silent|neighbou?r|late|night|baby|asleep/.test(text) ? 'quiet'
+  const vibe: Vibe = MOODS.gentle.test(text) ? 'gentle'
+    : MOODS.brisk.test(text) ? 'brisk'
+    : MOODS.quiet.test(text) ? 'quiet'
     : place?.[2] ?? 'steady';
   // "A meeting in 10 minutes" means a window, not a session length: finish with time to spare.
-  const buffer = time?.until && /meeting|call|class|interview|leave|leaving|train|bus/.test(text) && time.minutes > 3 ? 2 : 0;
-  const asked = (time?.minutes ?? 10) - buffer;
-  return { minutes: Math.min(60, Math.max(1, asked)), place: place?.[1], focus: focus?.[1], vibe, buffer, capped: asked > 60 };
+  const buffer = time?.until && WINDOW.context.test(text) && time.minutes > WINDOW.minMinutes ? WINDOW.bufferMinutes : 0;
+  const asked = (time?.minutes ?? PLAN.defaultMinutes) - buffer;
+  return { minutes: clampMinutes(asked), place: place?.[1], focus: focus?.[1], vibe, buffer, capped: asked > PLAN.maxMinutes };
 }
 
 // ---- Planning: the timers always add up to exactly the minutes on screen ----
 
 export function planSession(sit: Situation): Step[] {
-  const seconds = sit.minutes * 60, rest = REST[sit.vibe];
+  const seconds = sit.minutes * 60, rest = REST_SECONDS[sit.vibe];
   const word = FOCUS.find(([, name]) => name === sit.focus)?.[2];
   const name = (i: number, n: number) => n === 1 ? `${word ?? 'Main'} block` : `${word ? word + ' block' : 'Block'} ${ONES[i + 1]}`;
-  if (sit.minutes <= 3) return [{ id: 'b1', kind: 'block', label: name(0, 1), seconds }];
-  if (sit.minutes <= 6) return [{ id: 'warm', kind: 'warm', label: 'Warm-up', seconds: 60 }, { id: 'b1', kind: 'block', label: name(0, 1), seconds: seconds - 60 }];
-  const blocks = sit.minutes >= 15 ? 3 : 2, warm = sit.minutes >= 10 ? 120 : 60;
-  const work = seconds - warm - rest * (blocks - 1), each = Math.floor(work / blocks / 30) * 30;
+  if (sit.minutes <= PLAN.singleBlockMaxMinutes) return [{ id: 'b1', kind: 'block', label: name(0, 1), seconds }];
+  if (sit.minutes <= PLAN.oneBlockMaxMinutes) return [{ id: 'warm', kind: 'warm', label: 'Warm-up', seconds: PLAN.shortWarmupSeconds }, { id: 'b1', kind: 'block', label: name(0, 1), seconds: seconds - PLAN.shortWarmupSeconds }];
+  const blocks = sit.minutes >= PLAN.threeBlocksFromMinutes ? 3 : 2, warm = sit.minutes >= PLAN.longWarmupFromMinutes ? PLAN.longWarmupSeconds : PLAN.shortWarmupSeconds;
+  const work = seconds - warm - rest * (blocks - 1), each = Math.floor(work / blocks / PLAN.roundingSeconds) * PLAN.roundingSeconds;
   const steps: Step[] = [{ id: 'warm', kind: 'warm', label: 'Warm-up', seconds: warm }];
   for (let i = 0; i < blocks; i++) {
     steps.push({ id: `b${i + 1}`, kind: 'block', label: name(i, blocks), seconds: i === blocks - 1 ? work - each * (blocks - 1) : each });
@@ -110,9 +90,9 @@ function readingFor(sit: Situation, steps: Step[]) {
 function arrivalScreen(steps: Step[], reading: string, alert?: string): string[] {
   const blocks = steps.filter(step => step.kind === 'block').length, quiet = /Quiet/.test(reading);
   const chips = [
-    ...(total(steps) > 60 ? ['Shorter, please'] : []),
-    ...(steps.some(step => step.kind === 'rest') ? ['Give me longer rests'] : []),
-    'Somewhere else',
+    ...(total(steps) > CHANGES.minBlockSeconds ? [CHIPS.shorter] : []),
+    ...(steps.some(step => step.kind === 'rest') ? [CHIPS.longerRests] : []),
+    CHIPS.somewhereElse,
   ];
   return [
     st('ready_k', 'Keyword', [`${total(steps) / 60} min`, reading]),
@@ -134,7 +114,7 @@ function stepScreen(step: Step, steps: Step[], alert?: string): string[] {
       ...a,
       st(`${id}_t`, 'Timer', [step.label, step.seconds]),
       st(`${id}_cue`, 'Cue', [`Rest. ${next.label} is next.`]),
-      st(`${id}_f`, 'FollowUps', [['Longer rest', 'Shorter, please']]),
+      st(`${id}_f`, 'FollowUps', [[CHIPS.longerRest, CHIPS.shorter]]),
       refs(`s_${id}`, 'Screen', [`${id}_k`, ...aRef, `${id}_t`, `${id}_cue`, `${id}_f`]),
     ];
   }
@@ -144,7 +124,7 @@ function stepScreen(step: Step, steps: Step[], alert?: string): string[] {
     : step === blocks.at(-1) ? `${step.label}. The last one.`
     : `${step.label}. Quiet again.`;
   return [
-    st(`${id}_k`, 'Keyword', [step.label, `${position} of ${list.length} · ${dur(step.seconds)}`, ACCENT]),
+    st(`${id}_k`, 'Keyword', [step.label, `${position} of ${list.length} · ${dur(step.seconds)}`, BLOCK_ACCENT]),
     ...a,
     st(`${id}_t`, 'Timer', [step.label, step.seconds]),
     st(`${id}_cue`, 'Cue', [cue]),
@@ -159,7 +139,7 @@ function closeScreen(steps: Step[], alert?: string): string[] {
     'land_map = SessionMap()',
     ...(alert ? [st('land_alert', 'Alert', ['info', alert])] : []),
     st('land_cue', 'Cue', ["That's the session. Nothing left to do."]),
-    st('land_f', 'FollowUps', [['How did it go?', 'Same again tomorrow']]),
+    st('land_f', 'FollowUps', [[CHIPS.howDidItGo, CHIPS.sameAgain]]),
     refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', ...(alert ? ['land_alert'] : []), 'land_cue', 'land_f']),
   ];
 }
@@ -168,7 +148,7 @@ const screenKeys = (steps: Step[]) => ['s_ready', ...steps.map(step => `s_${step
 
 function sessionTurn(sit: Situation, prose?: string): Turn {
   const steps = planSession(sit), clocks = steps.length;
-  const meeting = sit.place === 'Before a meeting';
+  const meeting = sit.place === MEETING_PLACE;
   const context = [!meeting && sit.place?.toLowerCase(), sit.focus && `${sit.focus.toLowerCase()} focus`, { quiet: 'kept quiet', gentle: 'gentle pace', brisk: 'brisk', steady: '' }[sit.vibe]].filter(Boolean).join(', ');
   const lead = cap(plural(sit.minutes, 'minute'))
     + (meeting ? ' before your meeting' : '')
@@ -191,7 +171,7 @@ function pickerTurn(prose: string): Turn {
     st('hello_t', 'Text', ['Where are you right now?', 'title']),
     st('hello_d', 'Text', ["One tap. I'll shape the session around it.", 'description']),
     st('hello_cue', 'Cue', ["Tell me where you are. I'll do the rest."]),
-    st('hello_f', 'FollowUps', [['Hotel room, 10 minutes, keep it quiet', 'Home, 20 minutes, a little tired', 'Gym, 30 minutes, ready to go', '4 minutes before a meeting']]),
+    st('hello_f', 'FollowUps', [PICKER_CHIPS]),
     refs('s_hello', 'Screen', ['hello_t', 'hello_d', 'hello_cue', 'hello_f']),
   ];
   return { reply: clear + '\n' + fence(doc.join('\n')) + '\n' + prose };
@@ -246,16 +226,17 @@ function takeFromBlocks(steps: Step[], index: number, amount: number) {
   for (const step of [...steps].reverse()) {
     if (amount <= 0) break;
     if (step.kind === 'rest' || steps.indexOf(step) + 1 <= index) continue;
-    const take = Math.min(amount, Math.max(0, step.seconds - 60));
+    const take = Math.min(amount, Math.max(0, step.seconds - CHANGES.minBlockSeconds));
     step.seconds -= take; amount -= take;
   }
 }
-const spare = (steps: Step[], index: number) => steps.filter((s, i) => s.kind !== 'rest' && i + 1 > index).reduce((sum, s) => sum + Math.max(0, s.seconds - 60), 0);
+const spare = (steps: Step[], index: number) => steps.filter((s, i) => s.kind !== 'rest' && i + 1 > index).reduce((sum, s) => sum + Math.max(0, s.seconds - CHANGES.minBlockSeconds), 0);
 
 function shorter(session: Session): Turn {
   const steps = session.steps.map(s => ({ ...s })), before = total(steps);
   const ahead = steps.filter((s, i) => s.kind !== 'rest' && i + 1 > session.index).reduce((sum, s) => sum + s.seconds, 0);
-  const cut = Math.min(Math.max(60, Math.round(ahead / 3 / 60) * 60), Math.floor(spare(steps, session.index) / 60) * 60);
+  // A share of the block time ahead, in whole minutes (at least one), never more than the blocks can give.
+  const cut = Math.min(Math.max(60, Math.round(ahead * CHANGES.shorterFraction / 60) * 60), Math.floor(spare(steps, session.index) / 60) * 60);
   if (cut <= 0) return patchTurn(session, steps, 'Nothing ahead left to trim. Stop whenever you like.', "There's nothing ahead left to trim, so stop whenever you like; nothing is lost.");
   takeFromBlocks(steps, session.index, cut);
   const minutes = total(steps) / 60;
@@ -265,18 +246,18 @@ function shorter(session: Session): Turn {
 
 function longerRests(session: Session): Turn {
   const steps = session.steps.map(s => ({ ...s }));
-  const rests = steps.filter((s, i) => s.kind === 'rest' && i + 1 > session.index && s.seconds < 120);
-  const room = Math.min(rests.length, Math.floor(spare(steps, session.index) / 30));
+  const rests = steps.filter((s, i) => s.kind === 'rest' && i + 1 > session.index && s.seconds < CHANGES.maxRestSeconds);
+  const room = Math.min(rests.length, Math.floor(spare(steps, session.index) / CHANGES.restStepSeconds));
   const onRest = /^s_r\d$/.test(session.keys[session.index]);
   if (!room) {
     const why = onRest ? "Pause this clock as long as you need. Nothing moves until you tap Next." : 'No rests ahead can grow without cutting a block below a minute.';
     return patchTurn(session, steps, why, onRest ? 'Take this rest as long as you like; nothing moves until you tap Next.' : "There's no rest ahead I can lengthen without cutting a block below a minute, so nothing changed.");
   }
-  for (const rest of rests.slice(0, room)) rest.seconds += 30;
-  takeFromBlocks(steps, session.index, room * 30);
+  for (const rest of rests.slice(0, room)) rest.seconds += CHANGES.restStepSeconds;
+  takeFromBlocks(steps, session.index, room * CHANGES.restStepSeconds);
   const minutes = total(steps) / 60;
-  return patchTurn(session, steps, `Rests ahead +30 s. Still ${minutes} min in total.`,
-    `The rest${room === 1 ? '' : 's'} ahead ${room === 1 ? 'is' : 'are'} thirty seconds longer and the blocks gave up the time, so you still finish in ${plural(minutes, 'minute')}.`);
+  return patchTurn(session, steps, `Rests ahead +${CHANGES.restStepSeconds} s. Still ${minutes} min in total.`,
+    `The rest${room === 1 ? '' : 's'} ahead ${room === 1 ? 'is' : 'are'} ${words(CHANGES.restStepSeconds)} seconds longer and the blocks gave up the time, so you still finish in ${plural(minutes, 'minute')}.`);
 }
 
 // ---- The receipt: counted from the browser's timer snapshot, never assumed ----
@@ -303,8 +284,8 @@ function receipt(session: Session, events: string[]): Turn {
   ];
   const minutes = total(session.steps) / 60;
   const next = done.length * 2 >= work.length
-    ? (minutes <= 58 ? 'Two minutes longer next time' : 'Same again tomorrow')
-    : (minutes >= 3 ? 'Two minutes shorter next time' : 'Same again tomorrow');
+    ? (minutes + CHANGES.nextTimeStepMinutes <= PLAN.maxMinutes ? CHIPS.longerNextTime : CHIPS.sameAgain)
+    : (minutes - CHANGES.nextTimeStepMinutes >= PLAN.minMinutes ? CHIPS.shorterNextTime : CHIPS.sameAgain);
   const n = work.length;
   const headline = done.length === n ? (n === 1 ? 'The clock ran to zero.' : n === 2 ? 'Both ran to zero.' : `All ${words(n)} ran to zero.`)
     : done.length === 0 ? (n === 1 ? "The clock didn't run this time, and that's fine." : `None of the ${words(n)} ran this time, and that's fine.`)
@@ -314,7 +295,7 @@ function receipt(session: Session, events: string[]): Turn {
     ...items.map((text, i) => st(`land_i${i + 1}`, 'ListItem', [text, 'bullet'])),
     refs('land_l', 'List', items.map((_, i) => `land_i${i + 1}`)),
     st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'warm-up and blocks ran to zero · simulated']),
-    st('land_f2', 'FollowUps', [[...new Set(['Same again tomorrow', next])]]),
+    st('land_f2', 'FollowUps', [[...new Set([CHIPS.sameAgain, next])]]),
     refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', 'land_l', 'land_cue', 'land_f2']),
   ];
   return { reply: fence(doc.join('\n')) + '\n' + headline };
@@ -359,9 +340,9 @@ export function mockTurn(request: RequestData, fixture: string): Turn {
   const session = readSession(doc);
   if (/how did it go/.test(last)) return session ? receipt(session, request.state.client_events) : pickerTurn("Nothing has run yet, so let's start with where you are.");
   if (/same again|next time/.test(last)) {
-    const minutes = session ? total(session.steps) / 60 : 10;
-    const change = /longer next time/.test(last) ? 2 : /shorter next time/.test(last) ? -2 : 0;
-    const sit = { ...(previousSituation(request.messages) ?? { vibe: 'steady' as Vibe }), minutes: Math.min(60, Math.max(1, minutes + change)), buffer: 0, capped: false };
+    const minutes = session ? total(session.steps) / 60 : PLAN.defaultMinutes;
+    const change = /longer next time/.test(last) ? CHANGES.nextTimeStepMinutes : /shorter next time/.test(last) ? -CHANGES.nextTimeStepMinutes : 0;
+    const sit = { ...(previousSituation(request.messages) ?? { vibe: 'steady' as Vibe }), minutes: clampMinutes(minutes + change), buffer: 0, capped: false };
     return sessionTurn(sit, change
       ? `${cap(plural(sit.minutes, 'minute'))} this time, otherwise the same; nothing is scheduled, it's here whenever you are.`
       : "Same again, rebuilt; nothing is scheduled in this prototype, it's here whenever you are.");
