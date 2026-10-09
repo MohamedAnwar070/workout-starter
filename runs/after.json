@@ -3,130 +3,125 @@
   "label": "after",
   "appVersion": "2.0.0",
   "schemaVersion": "3",
-  "selectedProvider": "openai-api",
-  "note": "Live OpenAIAPI run (gpt-4.1) of the current skill: hotel room 10 min, warm-up finished, \"Shorter, please\" during block one, block one finished, block two skipped, then \"How did it go?\".",
+  "selectedProvider": "claude-cli",
+  "note": "Live ClaudeCLI run (Claude Code 2.1.282, claude-opus-5-5) of the final skill: hotel room 10 min, warm-up and block one finished, \"Shorter, please\" on the rest, block two skipped, then \"How did it go?\".",
   "events": [
     {
       "kind": "input",
       "text": "Hotel room, 10 minutes, keep it quiet",
-      "at": "2026-10-08T11:23:06.411Z"
+      "at": "2026-10-09T10:45:02.786Z"
     },
     {
       "kind": "response",
       "result": {
         "turn": {
-          "reply": "```openui\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land])\ns_ready = Screen([ready_k, ready_d, ready_cue, ready_f])\nready_k = Keyword(\"10 min\", \"Hotel room. Quiet. Two blocks.\")\nready_d = Text(\"Simulated session. Nothing here is exercise advice.\", \"description\")\nready_cue = Cue(\"Two quiet blocks. Step forward when you're set.\")\nready_f = FollowUps([\"Shorter, please\", \"Give me longer rests\", \"Somewhere else\"])\ns_warm = Screen([warm_k, warm_t, warm_cue])\nwarm_k = Keyword(\"Warm-up\", \"1 of 3 · 2 min\", \"#C2410C\")\nwarm_t = Timer(\"Warm-up\", 120)\nwarm_cue = Cue(\"Warm-up. Start the clock when you like.\")\ns_b1 = Screen([b1_k, b1_t, b1_cue])\nb1_k = Keyword(\"Block one\", \"2 of 3 · 3 min 30 s\", \"#C2410C\")\nb1_t = Timer(\"Block one\", 210)\nb1_cue = Cue(\"Block one. I'll go quiet.\")\ns_r1 = Screen([r1_k, r1_t, r1_cue, r1_f])\nr1_k = Keyword(\"Rest\", \"1 min · then Block two\")\nr1_t = Timer(\"Rest one\", 60)\nr1_cue = Cue(\"Rest. Block two is next.\")\nr1_f = FollowUps([\"Longer rest\", \"Shorter, please\"])\ns_b2 = Screen([b2_k, b2_t, b2_cue])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 3 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 210)\nb2_cue = Cue(\"Block two. The last one.\")\ns_land = Screen([land_t, land_k, land_cue, land_f])\nland_t = Text(\"Done for today.\", \"title\")\nland_k = Keyword(\"10 min\", \"planned · simulated\")\nland_cue = Cue(\"That's the session. Nothing left to do.\")\nland_f = FollowUps([\"How did it go?\", \"Same again tomorrow\"])\n```\n\nTen minutes, hotel room, kept quiet; I'll stay silent while the clocks run."
+          "reply": "```openui\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land])\ns_ready = Screen([ready_k, ready_map, ready_d, ready_cue, ready_f])\nready_k = Keyword(\"10 min\", \"Hotel room. Quiet. Warm-up + two blocks.\")\nready_map = SessionMap()\nready_d = Text(\"Simulated session. Nothing here is exercise advice.\", \"description\")\nready_cue = Cue(\"Soft and quiet. Tap Next when ready.\")\nready_f = FollowUps([\"Shorter, please\", \"Give me longer rests\", \"Somewhere else\"])\ns_warm = Screen([warm_k, warm_t, warm_cue])\nwarm_k = Keyword(\"Warm-up\", \"1 of 3 · 2 min\", \"#C2410C\")\nwarm_t = Timer(\"Warm-up\", 120)\nwarm_cue = Cue(\"Warm-up first. Start when you're set.\")\ns_b1 = Screen([b1_k, b1_t, b1_cue])\nb1_k = Keyword(\"Block one\", \"2 of 3 · 3 min 30 s\", \"#C2410C\")\nb1_t = Timer(\"Block one\", 210)\nb1_cue = Cue(\"Block one. Going quiet now.\")\ns_r1 = Screen([r1_k, r1_t, r1_cue, r1_f])\nr1_k = Keyword(\"Rest\", \"1 min · then Block two\")\nr1_t = Timer(\"Rest one\", 60)\nr1_cue = Cue(\"Breathe. One block left after this.\")\nr1_f = FollowUps([\"Longer rest\", \"Shorter, please\"])\ns_b2 = Screen([b2_k, b2_t, b2_cue])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 3 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 210)\nb2_cue = Cue(\"Block two. Last one, quietly.\")\ns_land = Screen([land_t, land_k, land_map, land_cue, land_f])\nland_t = Text(\"Done for today.\", \"title\")\nland_k = Keyword(\"10 min\", \"planned · simulated\")\nland_map = SessionMap()\nland_cue = Cue(\"All finished. The room is yours again.\")\nland_f = FollowUps([\"How did it go?\", \"Same again tomorrow\"])\n```\nHere's a quiet ten-minute session for your hotel room: a warm-up and two blocks with a one-minute rest, and I'll stay silent while the timers run."
         },
         "versions": {
           "app": "2.0.0",
           "schema": "3",
-          "skillHash": "37db51021339d8935aa6385fa267349608e1329778e9cdb7224e6e725218b5f9",
-          "protocolHash": "ea91434af7b5f146072857b451cf3a746eb5822730ddf70ce40a92f837428b50",
+          "skillHash": "c8ef50520ca511b7d1c1a1f6b022106c62d50a7a7434a58e73e46ef004d3954c",
+          "protocolHash": "f59258714c1b462e28d5df98252474984d580b04b33776218a14c77bc29b1723",
           "mode": "live",
-          "provider": "openai-api",
-          "model": "gpt-4.1",
-          "returnedModel": "gpt-4.1-2025-04-14",
-          "runtimeVersion": null,
-          "restrictionProfile": null
+          "provider": "claude-cli",
+          "model": "claude-cli-default (unresolved)",
+          "returnedModel": "claude-opus-5-5",
+          "runtimeVersion": "2.1.282",
+          "restrictionProfile": "claude-no-action-tools-v1"
         }
       },
-      "at": "2026-10-08T11:23:10.058Z"
+      "at": "2026-10-09T10:45:12.498Z"
     },
     {
       "kind": "screen-event",
       "text": "Now on step 2 of 6.",
-      "at": "2026-10-08T11:23:10.943Z"
+      "at": "2026-10-09T10:45:13.366Z"
     },
     {
       "kind": "screen-event",
       "text": "The timer for Warm-up finished.",
-      "at": "2026-10-08T11:23:10.994Z"
+      "at": "2026-10-09T10:45:13.695Z"
     },
     {
       "kind": "screen-event",
       "text": "Now on step 3 of 6.",
-      "at": "2026-10-08T11:23:11.271Z"
-    },
-    {
-      "kind": "screen-event",
-      "text": "Started a timer for Block one — 3 minutes 30 seconds.",
-      "at": "2026-10-08T11:23:11.310Z"
-    },
-    {
-      "kind": "input",
-      "text": "Shorter, please",
-      "at": "2026-10-08T11:23:11.362Z"
-    },
-    {
-      "kind": "response",
-      "result": {
-        "turn": {
-          "reply": "```openui\nr1_alert = Alert(\"info\", \"Now 9 min. Blocks ahead trimmed, rests kept.\")\ns_r1 = Screen([r1_k, r1_alert, r1_t, r1_cue, r1_f])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 2 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 150)\nland_k = Keyword(\"9 min\", \"planned · simulated\")\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_b1)\n```\n\nNine minutes now, down from ten; I trimmed the blocks ahead and kept the rests."
-        },
-        "versions": {
-          "app": "2.0.0",
-          "schema": "3",
-          "skillHash": "37db51021339d8935aa6385fa267349608e1329778e9cdb7224e6e725218b5f9",
-          "protocolHash": "ea91434af7b5f146072857b451cf3a746eb5822730ddf70ce40a92f837428b50",
-          "mode": "live",
-          "provider": "openai-api",
-          "model": "gpt-4.1",
-          "returnedModel": "gpt-4.1-2025-04-14",
-          "runtimeVersion": null,
-          "restrictionProfile": null
-        }
-      },
-      "at": "2026-10-08T11:23:13.043Z"
+      "at": "2026-10-09T10:45:13.784Z"
     },
     {
       "kind": "screen-event",
       "text": "The timer for Block one finished.",
-      "at": "2026-10-08T11:23:13.863Z"
+      "at": "2026-10-09T10:45:14.095Z"
     },
     {
       "kind": "screen-event",
       "text": "Now on step 4 of 6.",
-      "at": "2026-10-08T11:23:13.942Z"
-    },
-    {
-      "kind": "screen-event",
-      "text": "Now on step 5 of 6.",
-      "at": "2026-10-08T11:23:14.306Z"
-    },
-    {
-      "kind": "screen-event",
-      "text": "Now on step 6 of 6.",
-      "at": "2026-10-08T11:23:14.552Z"
+      "at": "2026-10-09T10:45:14.399Z"
     },
     {
       "kind": "input",
-      "text": "How did it go?",
-      "at": "2026-10-08T11:23:14.731Z"
+      "text": "Shorter, please",
+      "at": "2026-10-09T10:45:14.738Z"
     },
     {
       "kind": "response",
       "result": {
         "turn": {
-          "reply": "```openui\nland_i1 = ListItem(\"Ran to zero: Warm-up, Block one.\", \"bullet\")\nland_i2 = ListItem(\"Block two was not started.\", \"bullet\")\nland_i3 = ListItem(\"Rest stopped with 1 min left.\", \"bullet\")\nland_l = List([land_i1, land_i2, land_i3])\nland_k = Keyword(\"2 of 3\", \"block clocks ran to zero · simulated\")\nland_t = Text(\"Here's what ran.\", \"title\")\nland_f2 = FollowUps([\"Same again tomorrow\", \"Two minutes shorter next time\"])\ns_land = Screen([land_t, land_k, land_l, land_cue, land_f2])\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_land)\n```\n\nTwo of three block clocks ran to zero."
+          "reply": "```openui\nr1_alert = Alert(\"info\", \"Now 9 min. Block two trimmed, rest kept.\")\ns_r1 = Screen([r1_k, r1_alert, r1_t, r1_cue, r1_f])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 2 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 150)\nland_k = Keyword(\"9 min\", \"planned · simulated\")\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_r1)\n```\nThe session is now nine minutes instead of ten because I shortened Block two by a minute and kept your rest as it was."
         },
         "versions": {
           "app": "2.0.0",
           "schema": "3",
-          "skillHash": "37db51021339d8935aa6385fa267349608e1329778e9cdb7224e6e725218b5f9",
-          "protocolHash": "ea91434af7b5f146072857b451cf3a746eb5822730ddf70ce40a92f837428b50",
+          "skillHash": "c8ef50520ca511b7d1c1a1f6b022106c62d50a7a7434a58e73e46ef004d3954c",
+          "protocolHash": "f59258714c1b462e28d5df98252474984d580b04b33776218a14c77bc29b1723",
           "mode": "live",
-          "provider": "openai-api",
-          "model": "gpt-4.1",
-          "returnedModel": "gpt-4.1-2025-04-14",
-          "runtimeVersion": null,
-          "restrictionProfile": null
+          "provider": "claude-cli",
+          "model": "claude-cli-default (unresolved)",
+          "returnedModel": "claude-opus-5-5",
+          "runtimeVersion": "2.1.282",
+          "restrictionProfile": "claude-no-action-tools-v1"
         }
       },
-      "at": "2026-10-08T11:23:16.515Z"
+      "at": "2026-10-09T10:45:22.762Z"
+    },
+    {
+      "kind": "screen-event",
+      "text": "Now on step 5 of 6.",
+      "at": "2026-10-09T10:45:23.382Z"
+    },
+    {
+      "kind": "screen-event",
+      "text": "Now on step 6 of 6.",
+      "at": "2026-10-09T10:45:23.718Z"
+    },
+    {
+      "kind": "input",
+      "text": "How did it go?",
+      "at": "2026-10-09T10:45:24.019Z"
+    },
+    {
+      "kind": "response",
+      "result": {
+        "turn": {
+          "reply": "```openui\nland_t = Text(\"Here's what ran.\", \"title\")\nland_i1 = ListItem(\"Ran to zero: Warm-up, Block one.\", \"bullet\")\nland_i2 = ListItem(\"Not started: Block two, passed with its clock stopped.\", \"bullet\")\nland_i3 = ListItem(\"Rest one passed without its clock. No resets seen.\", \"bullet\")\nland_l = List([land_i1, land_i2, land_i3])\nland_k = Keyword(\"2 of 3\", \"warm-up and blocks ran to zero · simulated\")\nland_cue = Cue(\"Two clocks ran. That counts.\")\nland_f2 = FollowUps([\"Same again tomorrow\", \"Two minutes longer next time\"])\ns_land = Screen([land_t, land_k, land_map, land_l, land_cue, land_f2])\nroot = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_land)\n```\nTwo of three ran to zero: the warm-up and Block one finished, and Block two wasn't started."
+        },
+        "versions": {
+          "app": "2.0.0",
+          "schema": "3",
+          "skillHash": "c8ef50520ca511b7d1c1a1f6b022106c62d50a7a7434a58e73e46ef004d3954c",
+          "protocolHash": "f59258714c1b462e28d5df98252474984d580b04b33776218a14c77bc29b1723",
+          "mode": "live",
+          "provider": "claude-cli",
+          "model": "claude-cli-default (unresolved)",
+          "returnedModel": "claude-opus-5-5",
+          "runtimeVersion": "2.1.282",
+          "restrictionProfile": "claude-no-action-tools-v1"
+        }
+      },
+      "at": "2026-10-09T10:45:33.523Z"
     }
   ],
   "state": {
-    "ui_state": "root = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_land)\ns_ready = Screen([ready_k, ready_d, ready_cue, ready_f])\nready_k = Keyword(\"10 min\", \"Hotel room. Quiet. Two blocks.\")\nready_d = Text(\"Simulated session. Nothing here is exercise advice.\", \"description\")\nready_cue = Cue(\"Two quiet blocks. Step forward when you're set.\")\nready_f = FollowUps([\"Shorter, please\", \"Give me longer rests\", \"Somewhere else\"])\ns_warm = Screen([warm_k, warm_t, warm_cue])\nwarm_k = Keyword(\"Warm-up\", \"1 of 3 · 2 min\", \"#C2410C\")\nwarm_t = Timer(\"Warm-up\", 120)\nwarm_cue = Cue(\"Warm-up. Start the clock when you like.\")\ns_b1 = Screen([b1_k, b1_t, b1_cue])\nb1_k = Keyword(\"Block one\", \"2 of 3 · 3 min 30 s\", \"#C2410C\")\nb1_t = Timer(\"Block one\", 210)\nb1_cue = Cue(\"Block one. I'll go quiet.\")\ns_r1 = Screen([r1_k, r1_alert, r1_t, r1_cue, r1_f])\nr1_k = Keyword(\"Rest\", \"1 min · then Block two\")\nr1_t = Timer(\"Rest one\", 60)\nr1_cue = Cue(\"Rest. Block two is next.\")\nr1_f = FollowUps([\"Longer rest\", \"Shorter, please\"])\ns_b2 = Screen([b2_k, b2_t, b2_cue])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 2 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 150)\nb2_cue = Cue(\"Block two. The last one.\")\ns_land = Screen([land_t, land_k, land_l, land_cue, land_f2])\nland_t = Text(\"Here's what ran.\", \"title\")\nland_k = Keyword(\"2 of 3\", \"block clocks ran to zero · simulated\")\nland_cue = Cue(\"That's the session. Nothing left to do.\")\nr1_alert = Alert(\"info\", \"Now 9 min. Blocks ahead trimmed, rests kept.\")\nland_i1 = ListItem(\"Ran to zero: Warm-up, Block one.\", \"bullet\")\nland_i2 = ListItem(\"Block two was not started.\", \"bullet\")\nland_i3 = ListItem(\"Rest stopped with 1 min left.\", \"bullet\")\nland_l = List([land_i1, land_i2, land_i3])\nland_f2 = FollowUps([\"Same again tomorrow\", \"Two minutes shorter next time\"])",
+    "ui_state": "root = Screens([s_ready, s_warm, s_b1, s_r1, s_b2, s_land], s_land)\ns_ready = Screen([ready_k, ready_map, ready_d, ready_cue, ready_f])\nready_k = Keyword(\"10 min\", \"Hotel room. Quiet. Warm-up + two blocks.\")\nready_map = SessionMap()\nready_d = Text(\"Simulated session. Nothing here is exercise advice.\", \"description\")\nready_cue = Cue(\"Soft and quiet. Tap Next when ready.\")\nready_f = FollowUps([\"Shorter, please\", \"Give me longer rests\", \"Somewhere else\"])\ns_warm = Screen([warm_k, warm_t, warm_cue])\nwarm_k = Keyword(\"Warm-up\", \"1 of 3 · 2 min\", \"#C2410C\")\nwarm_t = Timer(\"Warm-up\", 120)\nwarm_cue = Cue(\"Warm-up first. Start when you're set.\")\ns_b1 = Screen([b1_k, b1_t, b1_cue])\nb1_k = Keyword(\"Block one\", \"2 of 3 · 3 min 30 s\", \"#C2410C\")\nb1_t = Timer(\"Block one\", 210)\nb1_cue = Cue(\"Block one. Going quiet now.\")\ns_r1 = Screen([r1_k, r1_alert, r1_t, r1_cue, r1_f])\nr1_k = Keyword(\"Rest\", \"1 min · then Block two\")\nr1_t = Timer(\"Rest one\", 60)\nr1_cue = Cue(\"Breathe. One block left after this.\")\nr1_f = FollowUps([\"Longer rest\", \"Shorter, please\"])\ns_b2 = Screen([b2_k, b2_t, b2_cue])\nb2_k = Keyword(\"Block two\", \"3 of 3 · 2 min 30 s\", \"#C2410C\")\nb2_t = Timer(\"Block two\", 150)\nb2_cue = Cue(\"Block two. Last one, quietly.\")\ns_land = Screen([land_t, land_k, land_map, land_l, land_cue, land_f2])\nland_t = Text(\"Here's what ran.\", \"title\")\nland_k = Keyword(\"2 of 3\", \"warm-up and blocks ran to zero · simulated\")\nland_map = SessionMap()\nland_cue = Cue(\"Two clocks ran. That counts.\")\nr1_alert = Alert(\"info\", \"Now 9 min. Block two trimmed, rest kept.\")\nland_i1 = ListItem(\"Ran to zero: Warm-up, Block one.\", \"bullet\")\nland_i2 = ListItem(\"Not started: Block two, passed with its clock stopped.\", \"bullet\")\nland_i3 = ListItem(\"Rest one passed without its clock. No resets seen.\", \"bullet\")\nland_l = List([land_i1, land_i2, land_i3])\nland_f2 = FollowUps([\"Same again tomorrow\", \"Two minutes longer next time\"])",
     "client_events": []
   },
   "timers": [

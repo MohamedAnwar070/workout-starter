@@ -61,8 +61,9 @@ Results (`runs/eval-*.json`; each file records the model and the skill hash it r
 | gpt-5.1 | one revision before final | 6/9 | 118/121 |
 | gpt-4.1 | final, before `SessionMap` | 7/9 | 119/121 |
 | **gpt-5.2** | **final, before `SessionMap`** | **20/20 runs that completed** (3 rounds × 9; 7 runs were stopped by my account's rate limit, not by a wrong answer) | 262/270 |
+| **claude-opus-5-5 via ClaudeCLI** | **final** (incl. `SessionMap`) | **27/27** (3 rounds × 9) | **384/384** |
 
-Check totals differ because a turn that fails outright skips the checks that depend on it. `SessionMap` was added after these runs. The eval now also checks that the model places it on the arrival and the close, but that check has not run live yet: my account had reached its rate limit.
+Check totals differ because a turn that fails outright skips the checks that depend on it. The OpenAI rows ran before `SessionMap` and the final receipt wording were added (the account then reached its limit); the ClaudeCLI rows run the final skill, including the check that the model places `SessionMap` on the arrival and the close.
 
 The point of running the strongest available model was to separate my mistakes from the model's. Every gpt-5.2 failure on earlier revisions traced back to the skill:
 - the greeting gained an extra "about" screen because the skill said "a single page", not exactly one screen;
@@ -71,7 +72,7 @@ The point of running the strongest available model was to separate my mistakes f
 
 The eval script also had a bug of its own: it flagged a refusal ("I can't provide reps or links") as a prescription.
 
-gpt-5 answered correctly whenever it finished, but it averages about 29 s per turn and three replies hit the starter's 3,000-token output cap. A half-minute pause after "Shorter, please" breaks a hands-busy experience, so I'd run this on **gpt-5.2**: 4.6 s median per turn, and correct in every completed run.
+gpt-5 answered correctly whenever it finished, but it averages about 29 s per turn and three replies hit the starter's 3,000-token output cap. A half-minute pause after "Shorter, please" breaks a hands-busy experience, so on OpenAI I'd run this on **gpt-5.2**: 4.6 s median per turn, and correct in every completed run. Through ClaudeCLI, Claude Opus 5.5 was correct in all 27 runs of the final skill at about 5 s per turn.
 
 What the evals changed in the skill:
 
@@ -98,8 +99,8 @@ A platform fix would move timer arithmetic out of the model entirely, either as 
 | Mode | Status |
 |---|---|
 | **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 50/50. `npm run test:ui`: 12/12, including the full workout flow and focus mode. Screenshots 04–07 come from that run. |
-| **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 (table above), plus one browser session on gpt-4.1 (earlier skill revision) exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. **gpt-5.2 is the model I'd recommend**; gpt-4o-mini is not reliable enough for this skill. |
-| **ClaudeCLI** | Not tested. |
+| **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 on earlier skill revisions (table above). **gpt-5.2 is the model I'd recommend** on OpenAI; gpt-4o-mini is not reliable enough for this skill. |
+| **ClaudeCLI** | Live, Linux, through the starter's restricted runner (Claude Code 2.1.282, Claude-plan login; it reported claude-opus-5-5). `npm run eval -- --consent --provider claude-cli` on the final skill: 27/27 scenario runs, 384/384 checks. Plus one browser session exported as `runs/after.json`: hotel 10 min → warm-up and block one finished → "Shorter, please" on the rest (10 → 9 min, alert there, cursor kept) → block two skipped → receipt "2 of 3", map "5 min 30 s of 9 min ran". Screenshots 08–09 come from it. |
 | **CodexCLI** | Disabled by the starter. |
 
 Not tested on Windows or macOS.

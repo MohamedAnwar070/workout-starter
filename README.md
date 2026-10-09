@@ -35,7 +35,7 @@ npm run test:ui
 npm run package
 ```
 
-`npm run eval -- --consent` checks the skill against a live OpenAI model: nine fixed situations, multi-turn, with the browser's events and timer snapshots simulated between turns, and every reply checked against the skill's rules (timer arithmetic, block counts, future-only patches, honest receipts, safety). It uses API budget, so it needs `ALLOW_LIVE_API=true` in `.env` and the explicit `--consent` flag. Add `--model gpt-4.1` to compare models, or `--root <dir>` to evaluate another copy of `prompts/` and `skills/`. Results are written to `runs/eval-<label>.json`.
+`npm run eval -- --consent` checks the skill against a live model (OpenAI by default; add `--provider claude-cli` to use the ClaudeCLI runner): nine fixed situations, multi-turn, with the browser's events and timer snapshots simulated between turns, and every reply checked against the skill's rules (timer arithmetic, block counts, future-only patches, honest receipts, safety). It uses API budget, so it needs `ALLOW_LIVE_API=true` in `.env` and the explicit `--consent` flag. Add `--model gpt-4.1` to compare models, or `--root <dir>` to evaluate another copy of `prompts/` and `skills/`. Results are written to `runs/eval-<label>.json`.
 
 The page follows the system light/dark setting; the header toggle overrides it. Theme colours live only in the `:root` tokens of `src/web/styles.css` (enforced by `tests/theme.test.mjs`).
 

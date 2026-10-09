@@ -1,26 +1,35 @@
 // Live behaviour check for skills/workout.md.
-// Sends fixed situations to the configured OpenAI model through the app's own prompt
-// loader and provider, simulates the browser's events and timer snapshots between turns,
-// and checks each reply against the skill's rules. Uses API budget, so it needs
-// ALLOW_LIVE_API=true in .env and an explicit --consent flag.
+// Sends fixed situations to a live model through the app's own prompt loader and provider
+// (OpenAIAPI, or ClaudeCLI with --provider claude-cli), simulates the browser's events and timer
+// snapshots between turns, and checks each reply against the skill's rules. It uses API budget or
+// Claude-plan quota, so it needs the provider enabled in .env and an explicit --consent flag.
 //
-//   npm run build && node --env-file=.env scripts/eval.mjs --consent [--label after] [--model id] [--repeat n] [--root dir] [--only name]
+//   npm run build && node --env-file=.env scripts/eval.mjs --consent [--provider openai-api|claude-cli] [--label after] [--model id] [--repeat n] [--root dir] [--only name]
 import { writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readConfig } from '../dist/server/config.js';
 import { loadPrompt } from '../dist/server/prompt.js';
 import { liveTurn } from '../dist/server/provider.js';
+import { claudeTurn } from '../dist/server/cli.js';
 import { ScreenDocument, splitReply } from '../dist/shared/openui/document.js';
 import { activityClientEvents } from '../dist/shared/openui/activity-client-events.js';
 
 const args = process.argv.slice(2), flag = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const project = fileURLToPath(new URL('../', import.meta.url));
 const root = resolve(flag('--root') ?? project), label = flag('--label') ?? 'eval', only = flag('--only'), repeat = Math.max(1, Number(flag('--repeat') ?? 1));
-const config = readConfig(process.env, project);
-if (flag('--model')) { if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(flag('--model'))) throw new Error('Invalid --model.'); config.model = flag('--model'); }
-if (!args.includes('--consent')) { console.error('This sends requests to OpenAI and uses your API budget. Re-run with --consent to agree.'); process.exit(1); }
-if (!config.allowLive || !config.key) { console.error('Set ALLOW_LIVE_API=true and OPENAI_API_KEY in .env, and run with node --env-file=.env.'); process.exit(1); }
+const config = readConfig(process.env, project), provider = flag('--provider') ?? 'openai-api';
+if (!['openai-api', 'claude-cli'].includes(provider)) throw new Error('--provider must be openai-api or claude-cli.');
+if (flag('--model')) { if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/.test(flag('--model'))) throw new Error('Invalid --model.'); if (provider === 'claude-cli') config.claude.model = flag('--model'); else config.model = flag('--model'); }
+if (!args.includes('--consent')) { console.error(`This sends live requests (${provider === 'claude-cli' ? 'your Claude-plan quota' : 'your OpenAI API budget'}). Re-run with --consent to agree.`); process.exit(1); }
+if (provider === 'openai-api' && (!config.allowLive || !config.key)) { console.error('Set ALLOW_LIVE_API=true and OPENAI_API_KEY in .env, and run with node --env-file=.env.'); process.exit(1); }
+if (provider === 'claude-cli' && (!config.claude.enabled || !config.claude.profileAcknowledged || !config.claude.binary)) { console.error('Set ALLOW_CLAUDE_CLI=true, CLAUDE_CLI_PATH and CLI_PROFILE_ACKNOWLEDGED=true in .env (see docs/RUNTIMES.md).'); process.exit(1); }
+const modelName = provider === 'claude-cli' ? config.claude.model || 'claude-cli default' : config.model, returned = new Set();
+const ask = async (request, signal) => {
+  const result = provider === 'claude-cli' ? await claudeTurn(request, prompt.instructions, config.claude, signal) : await liveTurn(request, prompt.instructions, config, signal);
+  if (result.returnedModel) returned.add(result.returnedModel);
+  return result.turn.reply;
+};
 const prompt = await loadPrompt(root);
 
 // ---- A browser stand-in: same document, same event phrases, same timer snapshot lines ----
@@ -39,10 +48,10 @@ class Session {
   snapshot() { return [...this.timers].map(([id, t]) => `Simulated timer ${id} (${t.label}): ${t.status}, ${Math.ceil(t.remaining)} of ${t.seconds} seconds remaining.`); }
   async send(text) {
     this.messages.push({ role: 'user', content: text });
-    const request = { messages: structuredClone(this.messages), state: { ui_state: this.doc.echo(), client_events: [...this.events, ...this.snapshot()].slice(-120) }, provider: 'openai-api', consent: true, fault: 'none' };
+    const request = { messages: structuredClone(this.messages), state: { ui_state: this.doc.echo(), client_events: [...this.events, ...this.snapshot()].slice(-120) }, provider, consent: true, fault: 'none' };
     const started = Date.now(); let reply = '', error = '';
     try {
-      reply = (await liveTurn(request, prompt.instructions, config, AbortSignal.timeout(90_000))).turn.reply;
+      reply = await ask(request, AbortSignal.timeout(120_000));
       const preview = new ScreenDocument(); if (this.doc.program) preview.apply('```openui\n' + this.doc.echo() + '\n```'); preview.apply(reply);
       // Same rule as the server: a screen outside its fence is rejected, not shown as chat text.
       if (/^\s*[A-Za-z_]\w*\s*=\s*[A-Z]\w*\(/m.test(preview.prose)) throw new Error('Screen written outside an openui fence.');
@@ -181,7 +190,7 @@ const scenarios = {
 };
 
 // ---- Run and report ----
-const report = { format: 'aira-workout-eval-v1', label, model: config.model, skillHash: prompt.skillHash, protocolHash: prompt.protocolHash, root: root === resolve(project) ? '.' : 'alternate', at: new Date().toISOString(), scenarios: [] };
+const report = { format: 'aira-workout-eval-v1', label, provider, model: modelName, skillHash: prompt.skillHash, protocolHash: prompt.protocolHash, root: root === resolve(project) ? '.' : 'alternate', at: new Date().toISOString(), scenarios: [] };
 let passed = 0, count = 0, clean = 0, runs = 0;
 for (let round = 1; round <= repeat; round++) for (const [scenario, run] of Object.entries(scenarios)) {
   if (only && scenario !== only) continue;
@@ -192,8 +201,8 @@ for (let round = 1; round <= repeat; round++) for (const [scenario, run] of Obje
   for (const x of results) if (!x.pass) console.log(`    ✗ ${x.name}${x.detail ? `  (${x.detail})` : ''}`);
   report.scenarios.push({ name, passed: ok, total: results.length, results, turns: s.turns });
 }
-Object.assign(report, { passed, total: count, scenariosClean: clean, scenariosRun: runs });
-console.log(`\n${label}: ${clean}/${runs} scenarios fully correct · ${passed}/${count} checks · ${config.model} · skill ${prompt.skillHash.slice(0, 8)}`);
+Object.assign(report, { passed, total: count, scenariosClean: clean, scenariosRun: runs, returnedModels: [...returned] });
+console.log(`\n${label}: ${clean}/${runs} scenarios fully correct · ${passed}/${count} checks · ${modelName}${returned.size ? ` (${[...returned].join(', ')})` : ''} · skill ${prompt.skillHash.slice(0, 8)}`);
 await mkdir(resolve(project, 'runs'), { recursive: true });
 await writeFile(resolve(project, 'runs', `eval-${label}.json`), JSON.stringify(report, null, 2) + '\n');
 console.log(`Saved runs/eval-${label}.json`);
