@@ -1,12 +1,24 @@
 # What I built
 
+**In short**
+- **The idea:** the screen waits for the person, never the person for the screen. One message ("hotel room, 10 minutes, quiet") builds the whole session; each screen does one thing; Aira's line comes only between blocks and she stays quiet while a clock runs; "Shorter" or "longer rests" change only what's ahead; "How did it go?" reports only what the clocks recorded.
+- **Built:** the skill (`skills/workout.md`); an offline director that follows the same rules, so Mock runs the whole flow with no key; a component of my own, `SessionMap`; a ring timer; focus mode while a clock runs; a layout that fits any window; light and dark themes; and a live eval script.
+- **Modes tested:**
+  - Mock: unit and browser tests, Linux.
+  - ClaudeCLI live: the final skill passed 27/27 scenario runs (393/393 checks), plus a recorded browser session in `runs/after.json`.
+  - OpenAIAPI live: earlier skill revisions only; gpt-5.2 recommended.
+  - Not tested on Windows or macOS.
+- **Try it:** `npm ci && npm start`, open http://127.0.0.1:4319, tap **Start a session**.
+
+The details follow.
+
 **The screen waits for the person, never the person for the screen.**
 
 A workout is a hands-busy moment. So Aira reads the situation from one message, builds the whole session at once, shows one thing per screen, speaks only at the seams, and stays quiet while a clock runs.
 
 ## The experience
 
-1. **One message, no interview.** "Hotel room, 10 minutes, keep it quiet" becomes a full session on the first turn. A vague "hi" gets a single question with four one-tap situations, never a chat. The arrival screen shows the reading ("Hotel room. Quiet. Two blocks.") with a **Somewhere else** chip, so one tap corrects it.
+1. **One message, no interview.** "Hotel room, 10 minutes, keep it quiet" becomes a full session on the first turn. A vague "hi" gets a single question with four one-tap situations, never a chat. The arrival screen shows the reading ("Hotel room. Quiet. Warm-up + two blocks.") with a **Somewhere else** chip, so one tap corrects it.
 2. **The situation shapes the session.**
    - Minutes set the structure: 1–3 min is a single block; longer sessions add a warm-up, rests and up to three blocks.
    - Mood sets the rests: tired gets 90 s, "ready to go" gets 30 s.
@@ -19,7 +31,7 @@ A workout is a hands-busy moment. So Aira reads the situation from one message, 
    - **Longer rests** takes the time from the blocks ahead, so the person still fits their window.
    - The block they are in is never re-rendered. The change is announced with an alert where it lands and one sentence in the chat.
    - On a rest, if nothing can change, Aira says the clock can be paused: nothing moves until they tap Next.
-5. **An honest receipt.** "How did it go?" counts the browser's own timer snapshot: what ran to zero, what stopped partway, what was never started, and any resets. Skipping everything gives "None of the three block clocks ran this time, and that's fine". There is no applause and no invented numbers. The next-time chip adapts: two minutes longer if most of it ran, shorter if not. Reaching the close ends the session: any clock still running is paused (and logged), so the receipt, the map and the event log always agree. The map also shows time on the clock ("2 min 2 s of 10 min ran"), computed locally from the real timers.
+5. **An honest receipt.** "How did it go?" counts the browser's own timer snapshot: what ran to zero, what stopped partway, what was never started, and any resets. Skipping everything gives "None of the three ran this time, and that's fine". There is no applause and no invented numbers. The next-time chip adapts: two minutes longer if most of it ran, shorter if not. Reaching the close ends the session: any clock still running is paused (and logged), so the receipt, the map and the event log always agree. The map also shows time on the clock ("2 min 2 s of 10 min ran"), computed locally from the real timers.
 6. **Boundaries.** Fictional and synthetic: no exercise names, reps, intensity or health advice. Mentioning pain or dizziness replaces the session with a quiet stop screen.
 7. **Glanceable from across the room.** Each clock is a ring that empties as time runs, readable without reading digits. At zero it turns green and says "Time. Next when you're ready.", and Next lights up, because a person with busy hands isn't watching the numbers.
 8. **A component of my own: `SessionMap`.** One bar for the whole session, each segment sized by its length. On arrival it shows the shape of what's ahead. On the close it shows what actually ran: ran, partly, not started. The model only decides *where* the map goes. The app draws it from the real Timers and their local states, so it can't report a block that didn't run, and the close screen is truthful the moment the person arrives, before any model turn.
@@ -44,7 +56,7 @@ The mock proves the experience; only a live model proves the skill. `scripts/eva
 - a chip;
 - hotel, then "Shorter" mid-block, then the receipt;
 - gym, then longer rests;
-- 1-minute legs;
+- 1-minute legs, then the receipt;
 - a meeting in 10 minutes;
 - everything skipped;
 - pain mid-session;
@@ -61,7 +73,7 @@ Results (`runs/eval-*.json`; each file records the model and the skill hash it r
 | gpt-5.1 | one revision before final | 6/9 | 118/121 |
 | gpt-4.1 | final, before `SessionMap` | 7/9 | 119/121 |
 | **gpt-5.2** | **final, before `SessionMap`** | **20/20 runs that completed** (3 rounds × 9; 7 runs were stopped by my account's rate limit, not by a wrong answer) | 262/270 |
-| **claude-opus-5-5 via ClaudeCLI** | **final** (incl. `SessionMap`) | **27/27** (3 rounds × 9) | **384/384** |
+| **claude-opus-5-5 via ClaudeCLI** | **final** (incl. `SessionMap`) | **27/27** (3 rounds × 9) | **393/393** |
 
 Check totals differ because a turn that fails outright skips the checks that depend on it. The OpenAI rows ran before `SessionMap` and the final receipt wording were added (the account then reached its limit); the ClaudeCLI rows run the final skill, including the check that the model places `SessionMap` on the arrival and the close.
 
@@ -78,17 +90,18 @@ What the evals changed in the skill:
 
 - **Fence first, sentence last.** Small models often wrote the sentence and stopped, leaving the screen unchanged. Putting the screen first removed that failure entirely.
 - **Look up the plan, don't calculate it.** Models are unreliable at arithmetic, so the skill carries an exact plan table generated from the same planner as the mock.
-- **Receipts count after listing.** gpt-4.1 once headlined "1 of 3" over a list showing two finished blocks. Writing the list first, then counting it, fixed that in the live browser run.
+- **Receipts count after listing.** gpt-4.1 once headlined "1 of 3" over a list showing two finished blocks. Writing the list first, then counting it, fixed that.
 - **Explicit name reuse.** One model renamed timers during a patch, which would silently reset a running clock. The skill now says so directly.
 - **Named plan rows with totals.** Every plan line spells out each timer and the sum, so a model copies it instead of improvising.
 - **Exact structure for the greeting, and how to remove things.** One `s_hello` screen and nothing else; to remove an alert, repeat the screen without it (gpt-4.1 had written `r2_alert = None`).
 
-What still fails, honestly. These are all on older or smaller models; gpt-5.2 had no failures on the final skill:
+What still fails, honestly. The automated checks found no failures on the final skill (ClaudeCLI) or on gpt-5.2; these are from older or smaller models, plus small wording slips seen in manual sessions:
 
 - the longest plans occasionally drift by a minute (gpt-4.1, gpt-5.1);
 - gpt-4.1 sometimes renames timers on "longer rests";
 - an occasional cue runs to ten words;
-- in the live browser run, the receipt said a never-started rest "stopped with 1 min left" and offered "shorter" even though most blocks ran;
+- in a live gpt-4.1 browser session, the receipt said a never-started rest "stopped with 1 min left" and offered "shorter" even though most blocks ran;
+- in manual ClaudeCLI sessions, a receipt sometimes adds a line about the rest clock, and one block cue was "Start the clock when you're set." rather than a quiet hush line;
 - gpt-4o-mini sometimes breaks the reply format itself;
 - gpt-4.1 once wrote the screen outside its fence; the server now rejects that and offers Retry instead of showing code in the chat.
 
@@ -98,9 +111,9 @@ A platform fix would move timer arithmetic out of the model entirely, either as 
 
 | Mode | Status |
 |---|---|
-| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 50/50. `npm run test:ui`: 12/12, including the full workout flow and focus mode. Screenshots 04–07 come from that run. |
+| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 51/51. `npm run test:ui`: 12/12, including the full workout flow and focus mode. Screenshots 04–07 come from that run. |
 | **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 on earlier skill revisions (table above). **gpt-5.2 is the model I'd recommend** on OpenAI; gpt-4o-mini is not reliable enough for this skill. |
-| **ClaudeCLI** | Live, Linux, through the starter's restricted runner (Claude Code 2.1.282, Claude-plan login; it reported claude-opus-5-5). `npm run eval -- --consent --provider claude-cli` on the final skill: 27/27 scenario runs, 384/384 checks. Plus one browser session exported as `runs/after.json`: hotel 10 min → warm-up and block one finished → "Shorter, please" on the rest (10 → 9 min, alert there, cursor kept) → block two skipped → receipt "2 of 3", map "5 min 30 s of 9 min ran". Screenshots 08–09 come from it. |
+| **ClaudeCLI** | Live, Linux, through the starter's restricted runner (Claude Code 2.1.282, Claude-plan login; it reported claude-opus-5-5). `npm run eval -- --consent --provider claude-cli` on the final skill: 27/27 scenario runs, 393/393 checks. Plus one browser session exported as `runs/after.json`: hotel 10 min → warm-up and block one finished → "Shorter, please" on the rest (10 → 9 min, alert there, cursor kept) → block two skipped → receipt "2 of 3", map "5 min 30 s of 9 min ran". Screenshots 08–09 come from it. |
 | **CodexCLI** | Disabled by the starter. |
 
 Not tested on Windows or macOS.

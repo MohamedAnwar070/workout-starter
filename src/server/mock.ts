@@ -293,7 +293,7 @@ function receipt(session: Session, events: string[]): Turn {
     st('land_t', 'Text', ["Here's what ran.", 'title']),
     ...items.map((text, i) => st(`land_i${i + 1}`, 'ListItem', [text, 'bullet'])),
     refs('land_l', 'List', items.map((_, i) => `land_i${i + 1}`)),
-    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'warm-up and blocks ran to zero · simulated']),
+    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, `${session.steps.some(s => s.kind === 'warm') ? 'warm-up and blocks ' : ''}ran to zero · simulated`]),
     st('land_f2', 'FollowUps', [[...new Set([CHIPS.sameAgain, next])]]),
     refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', 'land_l', 'land_cue', 'land_f2']),
   ];

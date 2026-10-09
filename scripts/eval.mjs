@@ -163,6 +163,12 @@ const scenarios = {
     const t = await s.send('leg workout, 1 min'); sessionChecks(r, s, t, 1); if (t.error) return;
     check(r, 'single block, no rest', timers(s).length === 1);
     check(r, 'block named for the focus', all(s, 'Keyword').some(k => /lower/i.test(String(k.props.text))));
+    for (let i = 1; i < s.screens.length; i++) { s.go(i); if (s.timerOn(i)) { s.timer(s.timerOn(i), 'start'); s.timer(s.timerOn(i), 'finish'); } }
+    const q = await s.send('How did it go?');
+    check(r, 'receipt applies', !q.error, q.error); if (q.error) return;
+    const land = kids(s.screens.at(-1)).filter(n => n.name === 'Keyword');
+    check(r, 'receipt shows 1 of 1', land.some(k => String(k.props.text) === '1 of 1'), land.map(k => k.props.text).join(' | '));
+    check(r, 'no warm-up mentioned when there is none', !/warm-up/i.test(land.map(k => k.props.caption).join(' ')), land.map(k => k.props.caption).join(' | '));
   },
   async 'meeting-window'(s, r) {
     const t = await s.send('I have a meeting in 10 minutes'); sessionChecks(r, s, t, 8);

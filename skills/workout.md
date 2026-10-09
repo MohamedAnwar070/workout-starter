@@ -130,7 +130,7 @@ Any message mid-session edits the future.
 
 You get no turn when they reach the close, so the receipt comes when they tap "How did it go?".
 - Count from the snapshot lines only. N is the same N as in the block captions: warm-up and blocks, never rests. A block counts as run when its timer says `done`. `running` or `paused` means stopped partway, with the time left. `stopped` means not started.
-- Patch the close: Text("Here's what ran.", "title"), Keyword(`"<done> of <N>"`, "warm-up and blocks ran to zero · simulated"), a List of short lines (ran to zero, stopped partway, not started, resets seen in events), and new FollowUps.
+- Patch the close: Text("Here's what ran.", "title"), Keyword(`"<done> of <N>"`, "warm-up and blocks ran to zero · simulated", or just "ran to zero · simulated" when there is no warm-up), a List of short lines (ran to zero, stopped partway, not started, resets seen in events), and new FollowUps.
 - Write the ListItems before the Keyword, then count: `<done>` is the number of names on the "Ran to zero" line. The headline, the list and the sentence must agree.
 - If at least half ran: ["Same again tomorrow", "Two minutes longer next time"]. Otherwise: ["Same again tomorrow", "Two minutes shorter next time"].
 - The reply is one sentence with the exact count: "Two of three ran to zero." If nothing ran: "None of the three ran this time, and that's fine."

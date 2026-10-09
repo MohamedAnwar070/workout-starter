@@ -91,3 +91,11 @@ test('SessionMap is placed on arrival and close, and only takes an optional capt
   assert(r.line('s_ready').includes('ready_map'));assert(r.line('s_land').includes('land_map'));
   r.doc.move(5);r.say('How did it go?',[snapshot('warm_t','done',0,120)]);assert(r.line('s_land').includes('land_map'),'receipt keeps the map');
 });
+
+test('a session without a warm-up never mentions one in its receipt',()=>{
+  const r=run();r.say('legs, 2 min');r.doc.move(2);
+  r.say('How did it go?',[snapshot('b1_t','done',0,120)]);
+  assert(r.line('land_k').includes('"1 of 1", "ran to zero · simulated"'),r.line('land_k'));
+  const w=run();w.say('Hotel room, 10 minutes, keep it quiet');w.doc.move(5);w.say('How did it go?',[snapshot('warm_t','done',0,120)]);
+  assert(w.line('land_k').includes('warm-up and blocks ran to zero'));
+});
