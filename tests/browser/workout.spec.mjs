@@ -46,6 +46,10 @@ test('focus mode steps aside for the chat: on request, on Esc and when a reply f
  await page.getByRole('button',{name:'Focus',exact:true}).click();await expect(page.locator('body')).toHaveClass(/focus/);
  await page.keyboard.press('Escape');await expect(page.locator('body')).not.toHaveClass(/focus/);
  await page.getByRole('button',{name:'Focus',exact:true}).click();await page.locator('#next').click();await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('4 / 6');
+ // While Aira thinks, the shared status pill shows at the top right and covers no control.
+ await page.locator('#fault').evaluate(e=>{e.value='slow';});await page.getByRole('button',{name:'Longer rest',exact:true}).click();await expect(page.locator('#pending')).toBeVisible();
+ expect(await page.evaluate(()=>{const p=document.querySelector('#pending').getBoundingClientRect();return [...document.querySelectorAll('button')].filter(b=>b.offsetParent).filter(b=>{const r=b.getBoundingClientRect();return !(r.right<=p.left||r.left>=p.right||r.bottom<=p.top||r.top>=p.bottom);}).map(b=>b.textContent);})).toEqual([]);
+ await expect(page.locator('#pending')).toBeHidden();
  // A failed reply must never be hidden behind focus mode.
  await page.locator('#fault').evaluate(e=>{e.value='request';});await page.getByRole('button',{name:'Shorter, please',exact:true}).click();
  await expect(page.locator('#error')).toBeVisible();await expect(page.locator('body')).not.toHaveClass(/focus/);

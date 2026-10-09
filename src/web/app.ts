@@ -7,7 +7,7 @@ import { splitReply } from '../shared/openui/document.js';
 import type { StatementNode } from '../shared/openui/openui-model.js';
 import { redactValue } from '../shared/redact.js';
 import { renderComponent } from './components.js';
-import { button,byId,el } from './dom.js';
+import { button,byId,el,statusPill } from './dom.js';
 
 type Config={providers:ProviderStatus[];token:string};let config:Config|undefined;
 // Focus mode: while a session's clock screen is on, the workout takes the whole window.
@@ -83,6 +83,7 @@ byId<HTMLInputElement>('consent').addEventListener('change',event=>{c.consent=(e
 byId('apply-patch').addEventListener('click',()=>{try{const raw=byId<HTMLTextAreaElement>('patch').value;c.document.apply(raw.includes('```')?raw:'```openui\n'+raw+'\n```');c.localEvent('Builder applied local OpenUI data: '+raw);byId('patch-status').textContent='Patch accepted. This is local fixture evidence, not a model run.';}catch{byId('patch-status').textContent='Invalid patch. Previous screen kept. Check names, arguments and catalog.';}});
 byId('export').addEventListener('click',()=>{const label=byId<HTMLSelectElement>('run-label').value;const payload={format:'aira-workout-run-v1',label,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,selectedProvider:c.provider,note:byId<HTMLTextAreaElement>('note').value,events:c.events,state:{ui_state:c.document.echo(),client_events:c.clientEvents},timers:timers.list()};const url=URL.createObjectURL(new Blob([JSON.stringify(redactValue(payload),null,2)],{type:'application/json'}));const link=el('a');link.href=url;link.download=label+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('export-status').textContent=`Downloaded ${label}.json. Review and move it into runs/.`;});
 async function start(){render();try{const response=await fetch('/api/config');if(!response.ok)throw new Error();config=await response.json();const select=byId<HTMLSelectElement>('provider');select.replaceChildren();for(const p of config!.providers){const option=el('option',p.label+(p.enabled?'':' · setup / blocked'));option.value=p.id;select.append(option);}select.value='mock';select.disabled=false;render();}catch{byId('status').textContent='Could not connect. Restart the local server and reload.';}}
+byId('status-tray').append(statusPill('pending','Aira is thinking','this screen stays put','busy'),statusPill('paused','Preview paused','your place is kept'));
 // App shell: the workspace fills the window below the header and mode bar, whatever their height
 // (the consent row appears in live mode, text wraps on phones), so the CSS gets it measured.
 function measureShell(){const w=document.querySelector<HTMLElement>('.workspace');if(w)document.documentElement.style.setProperty('--shell-top',`${Math.round(w.getBoundingClientRect().top+scrollY)}px`);}

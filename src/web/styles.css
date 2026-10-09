@@ -330,7 +330,9 @@ input[type=checkbox] {
 
 .panel-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 
 .panel-heading button {
@@ -349,29 +351,35 @@ input[type=checkbox] {
   flex-direction: column;
 }
 
-/* Pending and paused float over the top of the screen instead of pushing it down. */
-.preview > .notice {
-  position: absolute;
-  top: 104px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
-  margin: 0;
-  max-width: calc(100% - 48px);
-  padding: 7px 14px;
-  border: 0;
+/* Status tray: the one shared place for status pills, fixed at the top right and aligned with the
+   app's right edge, in normal and focus mode alike. It never takes layout space or covers controls. */
+.status-tray {
+  position: fixed;
+  top: 12px;
+  right: max(16px, calc((100% - 1320px) / 2 + 32px));
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 6px 12px;
   border-radius: var(--radius-full);
   background: #09090b;
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.4;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   box-shadow: var(--shadow-md);
+  animation: statusIn 160ms ease-out both;
 }
 
-#pending::before {
+.status-pill--busy::before {
   content: "";
   display: inline-block;
   width: 7px;
@@ -380,10 +388,17 @@ input[type=checkbox] {
   border-radius: 50%;
   background: var(--success);
   vertical-align: 1px;
-  animation: pendingPulse 1.2s ease-in-out infinite;
+  animation: statusPulse 1.2s ease-in-out infinite;
 }
 
-@keyframes pendingPulse {
+@keyframes statusIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes statusPulse {
   50% {
     opacity: 0.3;
   }
@@ -543,7 +558,8 @@ input[type=checkbox] {
 @media (prefers-reduced-motion: reduce) {
   #screen > * { animation: none; }
   .timer-ring .arc { transition: none; }
-  #pending::before { animation: none; }
+  .status-pill,
+  .status-pill--busy::before { animation: none; }
 }
 
 /* Session map: one segment per timer, sized by its length, coloured by what really ran. */
@@ -913,7 +929,6 @@ input[type=checkbox] {
   overflow: hidden;
 }
 
-.notice,
 #error {
   background: #f8fafc;
   border: 1px solid var(--border);
@@ -1010,7 +1025,7 @@ body.focus .preview {
 }
 
 body.focus .preview .panel-heading {
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-bottom: 12px;
   padding-bottom: 0;
   border-bottom: 0;
@@ -1018,6 +1033,25 @@ body.focus .preview .panel-heading {
 
 body.focus .preview .panel-heading h2 {
   display: none;
+}
+
+body.focus .panel-actions {
+  margin-left: 0;
+}
+
+/* In focus the status pill sits on the panel's button row, at its far right: the panel is centred
+   and at most 880 px wide inside a 32 px page margin and 24 px panel padding. */
+@media (min-width: 821px) {
+  body.focus .status-tray {
+    top: 44px;
+    right: calc(57px + max(0px, (100% - 946px) / 2));
+  }
+}
+
+@media (min-width: 821px) and (max-height: 900px) {
+  body.focus .status-tray {
+    top: 36px;
+  }
 }
 
 /* In focus the block name is already the headline, and the builder notes can wait. */
@@ -1287,6 +1321,26 @@ body.focus .spoken > .micro {
     display: block;
     margin-left: 0;
     margin-top: 4px;
+  }
+
+  /* Narrow screens: status pills keep their first words and align with the app's edge. */
+  .status-detail {
+    display: none;
+  }
+
+  .status-tray {
+    right: 20px;
+  }
+
+  .status-pill {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  /* Phones in focus: no room on the button row, so the pill rides the card's top corner,
+     clear of the buttons below it. */
+  body.focus .status-tray {
+    top: 4px;
   }
 
   /* On a phone the screen panel is exactly one window tall and the chat follows below it. */
