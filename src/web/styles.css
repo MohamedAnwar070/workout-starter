@@ -759,6 +759,10 @@ input[type=checkbox] {
   margin: 0 auto;
 }
 
+.empty .primary {
+  margin-top: 24px;
+}
+
 .block {
   padding: 8px 0;
   overflow-wrap: anywhere;
@@ -1527,10 +1531,6 @@ html.theme-switching::view-transition-new(root) {
     font-size: 10px;
   }
 
-  .spoken h2 {
-    display: block;
-  }
-
   .row {
     flex-wrap: wrap;
   }
@@ -1566,16 +1566,175 @@ html.theme-switching::view-transition-new(root) {
     top: 4px;
   }
 
-  /* On a phone the screen panel is exactly one window tall. */
-  .workspace {
+  /* Phones: the page scrolls naturally (no scroll box inside a scrolling page). The screen panel
+     fills at least the window, and Back/Next stay pinned to the bottom, under the thumb. */
+  .workspace,
+  body.focus .workspace {
     height: auto;
   }
 
   .preview {
-    height: max(520px, calc(100svh - var(--shell-top, 200px) - 16px));
+    min-height: max(520px, calc(100svh - var(--shell-top, 200px)));
+  }
+
+  body.focus main {
+    padding-bottom: 0;
+  }
+
+  body.focus .preview {
+    min-height: calc(100svh - 16px);
+  }
+
+  #screen {
+    flex: 1 0 auto;
+    overflow: visible;
+    container-type: normal;
+  }
+
+  /* Aira's line sits just above the stepper, and the stepper is a full-width bar that stays at the
+     bottom of the window, so Next is in the same place on every step. */
+  .preview > .spoken {
+    order: 1;
+    margin: 16px -24px 0;
+  }
+
+  #navigation {
+    order: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 0 -24px -24px;
+    padding: 12px 24px;
+    background: var(--surface);
+  }
+
+  /* Reset and Simulate finish share one line under the main timer button. */
+  .timer .row {
+    gap: 4px;
+  }
+
+  .timer .row button:not(.primary) {
+    padding-inline: 10px;
+  }
+
+  .timer .row > .primary {
+    flex: 1 0 100%;
+    max-width: 240px;
+    margin-inline: auto;
+  }
+
+  /* Screen buttons share each row evenly: bigger targets, and long ones get the width they need. */
+  #screen > .row button {
+    flex: 1 1 auto;
+  }
+
+  .provider-panel select {
+    flex: 1 1 100%;
+  }
+
+  .conversation > .row {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .provider-panel p.micro {
     display: none;
   }
 }
+
+/* Shorter phones: a smaller ring and headline so a whole step, Aira's line included, fits on one
+   screen (the page still scrolls if a screen is taller). */
+@media (max-width: 820px) and (max-height: 900px) {
+  #screen .keyword strong {
+    font-size: 38px;
+  }
+
+  #screen .keyword {
+    padding: 8px 0 4px;
+  }
+
+  #screen .timer-dial {
+    width: 132px;
+    height: 132px;
+  }
+
+  #screen .timer-dial strong {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 820px) and (max-height: 700px) {
+  #screen .keyword strong {
+    font-size: 32px;
+  }
+
+  #screen .timer-dial {
+    width: 108px;
+    height: 108px;
+  }
+
+  #screen .timer-dial strong {
+    font-size: 24px;
+  }
+
+  #screen .timer > .eyebrow {
+    display: none;
+  }
+
+  /* Small phones in focus: Aira's words stay, the lane's label goes, and spacing tightens. */
+  body.focus .preview > .spoken {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  body.focus .spoken h2 {
+    display: none;
+  }
+
+  body.focus .spoken p {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  #screen .alert {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  #screen .keyword p {
+    margin-top: 2px;
+  }
+}
+
+/* Touch screens: every control is at least 44 px tall (40 px for the small panel buttons), text
+   fields use 16 px text so phones do not zoom on focus, and the keyboard-only hint steps aside. */
+@media (pointer: coarse) {
+  button,
+  select,
+  #screen .row button {
+    min-height: 44px;
+  }
+
+  .panel-heading button {
+    min-height: 40px;
+  }
+
+  .theme-switch {
+    margin: -8px 0;
+    padding: 10px 2px;
+  }
+
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  #composer .row {
+    justify-content: flex-end;
+  }
+
+  #composer .row > .micro {
+    display: none;
+  }
+}
+

@@ -71,7 +71,10 @@ test('offline workout fits a phone and stops on pain',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.locator('#message').fill('leg workout, 2 min');await page.locator('#send').click();await expect(page.locator('#pending')).toBeHidden();
  await expect(page.locator('#position')).toHaveText('1 / 3');await page.locator('#next').click();await expect(page.locator('[data-statement="b1_k"]')).toContainText('Lower block');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:shots+'/07-workout-mobile.png',fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ // On a phone the page scrolls naturally (no scroll box inside it) and Back/Next sit at the bottom of the screen.
+ expect(await page.evaluate(()=>{const sc=document.querySelector('#screen'),nav=document.querySelector('#navigation').getBoundingClientRect();return {inner:sc.scrollHeight<=sc.clientHeight+1,navAtBottom:Math.abs(innerHeight-nav.bottom)<=2};})).toEqual({inner:true,navAtBottom:true});
+ await page.screenshot({path:shots+'/07-workout-mobile.png'});
  await expect(page.locator('body')).toHaveClass(/focus/);await page.getByRole('button',{name:'Show chat',exact:true}).click();
  await page.locator('#message').fill('my knee hurts');await page.locator('#send').click();await expect(page.locator('#pending')).toBeHidden();
  await expect(page.locator('#screen')).toContainText("Stop here. This prototype can't give health advice.");await expect(page.locator('#navigation')).toBeHidden();await expect(page.locator('body')).not.toHaveClass(/focus/);
