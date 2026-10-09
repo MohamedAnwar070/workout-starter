@@ -54,7 +54,6 @@ export function readSituation(text: string): Situation | undefined {
     : MOODS.brisk.test(text) ? 'brisk'
     : MOODS.quiet.test(text) ? 'quiet'
     : place?.[2] ?? 'steady';
-  // "A meeting in 10 minutes" means a window, not a session length: finish with time to spare.
   const buffer = time?.until && WINDOW.context.test(text) && time.minutes > WINDOW.minMinutes ? WINDOW.bufferMinutes : 0;
   const asked = (time?.minutes ?? PLAN.defaultMinutes) - buffer;
   return { minutes: clampMinutes(asked), place: place?.[1], focus: focus?.[1], vibe, buffer, capped: asked > PLAN.maxMinutes };

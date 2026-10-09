@@ -58,7 +58,6 @@ function render(){
   }
   byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;const ended=finished&&index===screens.length-1;byId<HTMLButtonElement>('next').disabled=paused||ended;byId('next').textContent=ended?UI_TEXT.sessionEnded:index===screens.length-1?UI_TEXT.finish:UI_TEXT.next;
   const children=(c.document.current?.props.children as StatementNode[]|undefined)??[];
-  // A SessionMap marks a planned session (the wiring sample has none), and a Timer marks a clock screen.
   const clockScreen=children.some(n=>n.name==='Timer')&&isSession();
   setFocus(clockScreen&&!focusOptOut&&!c.error);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?UI_TEXT.showChat:UI_TEXT.focus;
   byId<HTMLButtonElement>('pause').disabled=!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
@@ -68,7 +67,6 @@ function render(){
 function setFocus(on:boolean){
   if(on===focused)return;focused=on;
   const apply=()=>{document.body.classList.toggle('focus',on);scrollTo({top:0});};
-  // A short cross-fade between the two layouts, unless the person prefers reduced motion.
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&'startViewTransition' in document)document.startViewTransition(apply);else apply();
 }
 byId('focus').addEventListener('click',()=>{focusOptOut=focused;render();});
@@ -93,7 +91,6 @@ function applyTheme(theme?:string){
   if(theme==='light'||theme==='dark')document.documentElement.dataset.theme=theme;else delete document.documentElement.dataset.theme;
   const dark=themeNow()==='dark',toggle=byId('theme');toggle.setAttribute('aria-checked',String(dark));toggle.setAttribute('aria-label',UI_TEXT.themeSwitch);toggle.title=dark?UI_TEXT.themeToLight:UI_TEXT.themeToDark;
 }
-// The new theme fades in over the old one (no dip in between); instant for reduced motion or older browsers.
 function switchTheme(theme:'light'|'dark'){
   const change=()=>{try{localStorage.setItem(STORAGE_KEYS.theme,theme);}catch{}applyTheme(theme);};
   if(matchMedia('(prefers-reduced-motion: reduce)').matches||!('startViewTransition' in document)){change();return;}

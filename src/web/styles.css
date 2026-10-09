@@ -407,7 +407,6 @@ input[type=checkbox] {
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-card);
-  /* clip, not hidden: keeps the rounded corners without breaking the sticky stepper. */
   overflow: clip;
 }
 
@@ -891,7 +890,6 @@ input[type=checkbox] {
   font-size: 40px;
 }
 
-/* The status sits inside the ring, under the digits. */
 .timer-dial .timer-status {
   position: absolute;
   left: 50%;
@@ -1114,8 +1112,7 @@ body.focus main {
   padding-bottom: 16px;
 }
 
-/* The workout is the window: the preview is exactly one viewport tall, Back/Next and Aira's line
-   sit at the bottom, and the screen takes the space between (scrolling inside only if it must). */
+/* The workout is the window: the preview is exactly one viewport tall. */
 body.focus .workspace {
   grid-template-columns: 1fr;
   height: calc(100svh - 32px);
@@ -1459,7 +1456,7 @@ html.theme-switching::view-transition-new(root) {
     top: 4px;
   }
 
-  /* On a phone the screen panel is exactly one window tall and the chat follows below it. */
+  /* On a phone the screen panel is exactly one window tall. */
   .workspace {
     height: auto;
   }

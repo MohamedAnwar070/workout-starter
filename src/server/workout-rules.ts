@@ -4,7 +4,6 @@
 
 export type Vibe = 'quiet' | 'gentle' | 'brisk' | 'steady';
 
-// Session length and shape.
 export const PLAN = {
   defaultMinutes: 10,
   minMinutes: 1,
