@@ -10,6 +10,8 @@ import { renderComponent } from './components.js';
 import { button,byId,el } from './dom.js';
 
 type Config={providers:ProviderStatus[];token:string};let config:Config|undefined;
+// Focus mode: while a session's clock screen is on, the workout takes the whole window.
+let focused=false,focusOptOut=false;
 const timers=new TimerLedger();let previousTimers=new Map<string,TimerListEntry>(),updates:(()=>void)[]=[],paused=false,pausedTimers:string[]=[],renderKey='',lastClear=0;
 const draft=byId<HTMLTextAreaElement>('message');
 const c=new Conversation(async(request:RequestData,signal:AbortSignal):Promise<Result>=>{
@@ -22,7 +24,7 @@ function makeNav(){return createRunNav({index:()=>c.document.screens.findIndex(s
 let nav=makeNav();
 function send(text:string){if(!config)return;const provider=config.providers.find(p=>p.id===c.provider)!;if(!provider.enabled||(c.provider!=='mock'&&!c.consent)){c.error='Set up this provider and agree to usage, or select Mock.';render();return;}if(paused){c.error='Resume the preview before sending.';render();return;}const f=byId<HTMLSelectElement>('fault');const fault=f.value as RequestData['fault'];f.value='none';void c.send(text,fault);}
 function syncTimers(){
-  if(lastClear!==c.document.clearVersion){nav.dispose();nav=makeNav();timers.forget();previousTimers.clear();lastClear=c.document.clearVersion;}
+  if(lastClear!==c.document.clearVersion){focusOptOut=false;nav.dispose();nav=makeNav();timers.forget();previousTimers.clear();lastClear=c.document.clearVersion;}
   const ids=new Set<string>();for(const s of c.document.screens)for(const node of s.props.children as StatementNode[])if(node.name==='Timer'){ids.add(node.key);timers.ensure(node.key,{label:String(node.props.label),seconds:Number(node.props.seconds)});}
   for(const t of timers.list())if(!ids.has(t.id)){timers.forget(t.id);previousTimers.delete(t.id);}
 }
@@ -48,14 +50,26 @@ function render(){
     const progress=byId('progress');progress.replaceChildren();if(screens.length>1)for(let i=0;i<screens.length;i++){const n=el('span','',''+(i===index?'active':i<index?'past':''));n.setAttribute('aria-label',`Screen ${i+1}${i===index?', current':''}`);progress.append(n);}
   }
   byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;byId<HTMLButtonElement>('next').disabled=paused;byId('next').textContent=index===screens.length-1?'Finish preview':'Next →';
+  const children=(c.document.current?.props.children as StatementNode[]|undefined)??[];
+  // A SessionMap marks a planned session (the wiring sample has none), and a Timer marks a clock screen.
+  const clockScreen=children.some(n=>n.name==='Timer')&&screens.some(s=>(s.props.children as StatementNode[]).some(n=>n.name==='SessionMap'));
+  setFocus(clockScreen&&!focusOptOut&&!c.error);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?'Show chat':'Focus';
   byId<HTMLButtonElement>('pause').disabled=!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
   const cues=(c.document.current?.props.children as StatementNode[]??[]).filter(n=>n.name==='Cue').map(n=>String(n.props.text));byId('spoken').textContent=cues.join(' ')||c.document.prose||'Current-screen Cues appear here as text. No audio is produced.';
   byId('state-json').textContent=JSON.stringify({ui_state:c.document.echo(),client_events:c.clientEvents,timers:timers.list()},null,2);byId<HTMLButtonElement>('export').disabled=c.pending||!c.events.length;
 }
+function setFocus(on:boolean){
+  if(on===focused)return;focused=on;
+  const apply=()=>{document.body.classList.toggle('focus',on);scrollTo({top:0});};
+  // A short cross-fade between the two layouts, unless the person prefers reduced motion.
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&'startViewTransition' in document)document.startViewTransition(apply);else apply();
+}
+byId('focus').addEventListener('click',()=>{focusOptOut=focused;render();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focused){focusOptOut=true;render();}});
 byId<HTMLFormElement>('composer').addEventListener('submit',event=>{event.preventDefault();const text=draft.value.trim();if(text){draft.value='';send(text);}});
 draft.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();byId<HTMLFormElement>('composer').requestSubmit();}});
 byId('sample').addEventListener('click',()=>send('Load wiring sample'));byId('cancel').addEventListener('click',()=>c.cancel());byId('retry').addEventListener('click',()=>{if(!paused)void c.retry();});
-byId('reset').addEventListener('click',()=>{nav.dispose();paused=false;pausedTimers=[];timers.forget();previousTimers.clear();draft.value='';c.reset();});
+byId('reset').addEventListener('click',()=>{focusOptOut=false;nav.dispose();paused=false;pausedTimers=[];timers.forget();previousTimers.clear();draft.value='';c.reset();});
 byId('back').addEventListener('click',()=>nav.back());byId('next').addEventListener('click',()=>nav.next());
 byId('pause').addEventListener('click',()=>{paused=!paused;if(paused){pausedTimers=timers.list().filter(t=>t.status==='running').map(t=>t.id);for(const id of pausedTimers)timers.pause(id);}else{for(const id of pausedTimers)timers.start(id);pausedTimers=[];}c.localEvent(paused?'User paused the preview.':'User resumed the preview.');tick();});
 byId<HTMLSelectElement>('provider').addEventListener('change',event=>c.selectProvider((event.target as HTMLSelectElement).value as Provider));
@@ -63,4 +77,8 @@ byId<HTMLInputElement>('consent').addEventListener('change',event=>{c.consent=(e
 byId('apply-patch').addEventListener('click',()=>{try{const raw=byId<HTMLTextAreaElement>('patch').value;c.document.apply(raw.includes('```')?raw:'```openui\n'+raw+'\n```');c.localEvent('Builder applied local OpenUI data: '+raw);byId('patch-status').textContent='Patch accepted. This is local fixture evidence, not a model run.';}catch{byId('patch-status').textContent='Invalid patch. Previous screen kept. Check names, arguments and catalog.';}});
 byId('export').addEventListener('click',()=>{const label=byId<HTMLSelectElement>('run-label').value;const payload={format:'aira-workout-run-v1',label,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,selectedProvider:c.provider,note:byId<HTMLTextAreaElement>('note').value,events:c.events,state:{ui_state:c.document.echo(),client_events:c.clientEvents},timers:timers.list()};const url=URL.createObjectURL(new Blob([JSON.stringify(redactValue(payload),null,2)],{type:'application/json'}));const link=el('a');link.href=url;link.download=label+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('export-status').textContent=`Downloaded ${label}.json. Review and move it into runs/.`;});
 async function start(){render();try{const response=await fetch('/api/config');if(!response.ok)throw new Error();config=await response.json();const select=byId<HTMLSelectElement>('provider');select.replaceChildren();for(const p of config!.providers){const option=el('option',p.label+(p.enabled?'':' · setup / blocked'));option.value=p.id;select.append(option);}select.value='mock';select.disabled=false;render();}catch{byId('status').textContent='Could not connect. Restart the local server and reload.';}}
+// App shell: the workspace fills the window below the header and mode bar, whatever their height
+// (the consent row appears in live mode, text wraps on phones), so the CSS gets it measured.
+function measureShell(){const w=document.querySelector<HTMLElement>('.workspace');if(w)document.documentElement.style.setProperty('--shell-top',`${Math.round(w.getBoundingClientRect().top+scrollY)}px`);}
+const shellObserver=new ResizeObserver(measureShell);for(const part of ['header','.provider-panel'])shellObserver.observe(document.querySelector(part)!);addEventListener('resize',measureShell);measureShell();
 setInterval(tick,250);void start();

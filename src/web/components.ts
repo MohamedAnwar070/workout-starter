@@ -20,10 +20,10 @@ export const renderers: Record<string,(node:StatementNode,context:Context)=>HTML
     const n=el('section','','timer');n.setAttribute('aria-label',String(p.label));
     n.append(el('p','SIMULATED TIMER · LOCAL ONLY','eyebrow'),el('h3',String(p.label)));
     // A ring that empties as time runs: readable from across a room, without reading digits.
-    const value=el('strong'),status=el('span','','micro timer-status'),row=el('div','','row'),dial=el('div','','timer-dial'),{svg,arc}=ring();dial.append(svg,value);
+    const value=el('strong'),status=el('span','','micro timer-status'),row=el('div','','row'),dial=el('div','','timer-dial'),{svg,arc}=ring();dial.append(svg,value,status);
     const done=el('p','Time. Next when you\'re ready.','timer-done-note');
     const start=button('Start simulation',()=>c.timerAction(key,'start'),'primary'),pause=button('Pause timer',()=>c.timerAction(key,'pause')),reset=button('Reset timer',()=>c.timerAction(key,'reset')),finish=button('Simulate finish',()=>c.timerAction(key,'finish'));
-    row.append(start,pause,reset,finish);n.append(dial,status,done,row,el('p','Finishing records a local timer event.','micro'));
+    row.append(start,pause,reset,finish);n.append(dial,done,row,el('p','Finishing records a local timer event.','micro'));
     const update=()=>{const entry=c.timers.list().find(t=>t.id===key);if(!entry)return;const seconds=Math.ceil(entry.remaining);value.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;status.textContent=entry.status;
       arc.style.strokeDashoffset=String(RING*(1-entry.remaining/entry.seconds));n.classList.toggle('timer-done',entry.status==='done');done.hidden=entry.status!=='done';start.hidden=entry.status==='running'||entry.status==='paused';start.textContent=entry.status==='done'?'Restart simulation':'Start simulation';pause.hidden=entry.status==='stopped'||entry.status==='done';pause.textContent=entry.status==='paused'?'Resume timer':'Pause timer';for(const b of [start,pause,reset,finish])b.disabled=c.paused;};
     c.updates.push(update);update();return n;

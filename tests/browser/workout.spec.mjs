@@ -12,16 +12,20 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  await expect(page.locator('#position')).toHaveText('1 / 6');await expect(page.locator('[data-statement="ready_k"]')).toContainText('10 min');
  await expect(page.locator('[data-statement="ready_map"] .segment')).toHaveCount(4);await expect(page.locator('[data-statement="ready_map"] figcaption')).toBeHidden();
  await expect(page.locator('#spoken')).toHaveText("Two quiet blocks. Step forward when you're set.");await page.screenshot({path:shots+'/04-workout-arrival.png',fullPage:true});
+ await page.locator('#next').click();await expect(page.locator('[data-statement="warm_k"]')).toContainText('1 of 3 · 2 min');
+ // The session has started: focus mode leaves only the workout on screen.
+ await expect(page.locator('body')).toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeHidden();
  // The stepper must not move between steps of different heights.
  const nextTop=()=>page.evaluate(()=>document.querySelector('#next').getBoundingClientRect().top+scrollY);const before=await nextTop();
- await page.locator('#next').click();await expect(page.locator('[data-statement="warm_k"]')).toContainText('1 of 3 · 2 min');expect(Math.abs(await nextTop()-before)).toBeLessThanOrEqual(1);
  await expect(page.locator('.timer-ring')).toBeVisible();await expect(page.locator('.timer-done-note')).toBeHidden();
  await tap(page,'Simulate finish');await expect(page.locator('.timer-status')).toHaveText('done');await expect(page.locator('.timer-done-note')).toHaveText("Time. Next when you're ready.");
- await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('3 / 6');await page.screenshot({path:shots+'/05-workout-block.png',fullPage:true});
+ await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('3 / 6');expect(Math.abs(await nextTop()-before)).toBeLessThanOrEqual(1);await page.screenshot({path:shots+'/05-workout-block.png',fullPage:true});
  await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('4 / 6');
  await tap(page,'Shorter, please');await expect(page.locator('#position')).toHaveText('4 / 6');await expect(page.locator('[data-statement="r1_alert"]')).toContainText('Now 9 min');
  await page.locator('#next').click();await expect(page.locator('[data-statement="b2_k"]')).toContainText('3 of 3 · 2 min 30 s');
  await page.locator('#next').click();await expect(page.locator('[data-statement="land_k"]')).toContainText('9 min');
+ // Finished: focus steps aside and the chat is back for the receipt.
+ await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
  // The close shows what really ran before any model turn: warm-up only.
  await expect(page.locator('[data-statement="land_map"] .segment.ran')).toHaveCount(1);await expect(page.locator('[data-statement="land_map"] .legend')).toHaveText(['ran','not started']);
  await tap(page,'How did it go?');
@@ -30,11 +34,30 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  expect(errors).toEqual([]);
 });
 
+test('focus mode steps aside for the chat: on request, on Esc and when a reply fails',async({page})=>{
+ await page.setViewportSize({width:1280,height:720});
+ // The app fits the window on a common laptop: chat box visible, and screens need no inner scrolling.
+ const fits=()=>page.evaluate(()=>{const sc=document.querySelector('#screen');return {app:document.querySelector('.workspace').getBoundingClientRect().bottom<=innerHeight+1,composer:document.querySelector('#composer').getBoundingClientRect().bottom<=innerHeight+1,screen:sc.scrollHeight<=sc.clientHeight+1};});
+ await tap(page,'Start a session');await tap(page,'Hotel room, 10 minutes, keep it quiet');await expect(page.locator('body')).not.toHaveClass(/focus/);
+ expect(await fits()).toEqual({app:true,composer:true,screen:true});
+ await page.locator('#next').click();await expect(page.locator('body')).toHaveClass(/focus/);expect((await fits()).screen).toBe(true);
+ await page.getByRole('button',{name:'Show chat',exact:true}).click();await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
+ await page.getByRole('button',{name:'Focus',exact:true}).click();await expect(page.locator('body')).toHaveClass(/focus/);
+ await page.keyboard.press('Escape');await expect(page.locator('body')).not.toHaveClass(/focus/);
+ await page.getByRole('button',{name:'Focus',exact:true}).click();await page.locator('#next').click();await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('4 / 6');
+ // A failed reply must never be hidden behind focus mode.
+ await page.locator('#fault').evaluate(e=>{e.value='request';});await page.getByRole('button',{name:'Shorter, please',exact:true}).click();
+ await expect(page.locator('#error')).toBeVisible();await expect(page.locator('body')).not.toHaveClass(/focus/);
+ await page.locator('#retry').click();await expect(page.locator('#error')).toBeHidden();await expect(page.locator('body')).toHaveClass(/focus/);
+ await expect(page.locator('[data-statement="r1_alert"]')).toContainText('Now 9 min');
+});
+
 test('offline workout fits a phone and stops on pain',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.locator('#message').fill('leg workout, 2 min');await page.locator('#send').click();await expect(page.locator('#pending')).toBeHidden();
  await expect(page.locator('#position')).toHaveText('1 / 3');await page.locator('#next').click();await expect(page.locator('[data-statement="b1_k"]')).toContainText('Lower block');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:shots+'/07-workout-mobile.png',fullPage:true});
+ await expect(page.locator('body')).toHaveClass(/focus/);await page.getByRole('button',{name:'Show chat',exact:true}).click();
  await page.locator('#message').fill('my knee hurts');await page.locator('#send').click();await expect(page.locator('#pending')).toBeHidden();
- await expect(page.locator('#screen')).toContainText("Stop here. This prototype can't give health advice.");await expect(page.locator('#navigation')).toBeHidden();
+ await expect(page.locator('#screen')).toContainText("Stop here. This prototype can't give health advice.");await expect(page.locator('#navigation')).toBeHidden();await expect(page.locator('body')).not.toHaveClass(/focus/);
 });

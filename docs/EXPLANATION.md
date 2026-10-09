@@ -23,6 +23,8 @@ A workout is a hands-busy moment. So Aira reads the situation from one message, 
 6. **Boundaries.** Fictional and synthetic: no exercise names, reps, intensity or health advice. Mentioning pain or dizziness replaces the session with a quiet stop screen.
 7. **Glanceable from across the room.** Each clock is a ring that empties as time runs, readable without reading digits. At zero it turns green and says "Time. Next when you're ready.", and Next lights up, because a person with busy hands isn't watching the numbers.
 8. **A component of my own: `SessionMap`.** One bar for the whole session, each segment sized by its length. On arrival it shows the shape of what's ahead. On the close it shows what actually ran: ran, partly, not started. The model only decides *where* the map goes. The app draws it from the real Timers and their local states, so it can't report a block that didn't run, and the close screen is truthful the moment the person arrives, before any model turn.
+9. **Focus mode while the clock runs.** Once the session starts (the first clock screen), everything but the workout steps aside: page header, chat, builder tools. The screen fills the window with Back/Next and Aira's line pinned at the bottom, sized to fit from a phone to a large monitor. It ends on the close, so the receipt appears next to the chat. The chat is one tap away ("Show chat" or Esc), and a failed reply brings it back automatically so Retry is never hidden. The panel glides to its new place on entry and exit. Focus mode only applies to planned sessions (marked by a `SessionMap`), not the starter's wiring sample.
+10. **The whole app fits the window.** Outside focus mode the workspace is exactly as tall as the window below the header and mode bar: the chat scrolls inside its column with the message box always visible, and the screen keeps Back/Next and Aira's line at the bottom. On phones the screen panel is one window tall with the chat below. Measured on every screen state at 390×844, 768×1024, 1024×768, 1280×720, 1366×768, 1440×900, 1920×930 and 1920×1080: nothing needs scrolling. Only a 360×640 phone scrolls inside the screen, with Next and Aira's line still visible.
 
 ## Where it lives
 
@@ -93,7 +95,7 @@ A platform fix would move timer arithmetic out of the model entirely, either as 
 
 | Mode | Status |
 |---|---|
-| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 48/48. `npm run test:ui`: 10/10, including the full workout flow. Screenshots 04–07 come from that run. |
+| **Mock** | Linux, Node 22, headless Chromium. `npm run check`: 48/48. `npm run test:ui`: 11/11, including the full workout flow and focus mode. Screenshots 04–07 come from that run. |
 | **OpenAIAPI** | Live, Linux. `npm run eval` on gpt-4o-mini, gpt-4.1-mini, gpt-4.1, gpt-5, gpt-5.1 and gpt-5.2 (table above), plus one browser session on gpt-4.1 (earlier skill revision) exported as `runs/after.json`. That session ran hotel 10 min → "Shorter" mid-block (10 → 9 min, alert on the rest screen) → receipt "2 of 3". Screenshots 08–09 come from it. **gpt-5.2 is the model I'd recommend**; gpt-4o-mini is not reliable enough for this skill. |
 | **ClaudeCLI** | Not tested. |
 | **CodexCLI** | Disabled by the starter. |
