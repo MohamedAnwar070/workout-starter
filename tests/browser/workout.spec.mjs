@@ -15,6 +15,8 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  await page.locator('#next').click();await expect(page.locator('[data-statement="warm_k"]')).toContainText('1 of 3 · 2 min');
  // The session has started: focus mode leaves only the workout on screen.
  await expect(page.locator('body')).toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeHidden();
+ // An automatic switch explains itself.
+ await expect(page.locator('#focus-on')).toHaveText('Focus mode on · Show chat or Esc for the conversation');
  // The stepper must not move between steps of different heights.
  const nextTop=()=>page.evaluate(()=>document.querySelector('#next').getBoundingClientRect().top+scrollY);const before=await nextTop();
  await expect(page.locator('.timer-ring')).toBeVisible();await expect(page.locator('.timer-done-note')).toBeHidden();
@@ -26,6 +28,7 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  await page.locator('#next').click();await expect(page.locator('[data-statement="land_k"]')).toContainText('9 min');
  // Finished: focus steps aside and the chat is back for the receipt.
  await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
+ await expect(page.locator('#focus-off')).toHaveText('Session complete · the chat is back');
  // The close shows what really ran before any model turn: warm-up only.
  await expect(page.locator('[data-statement="land_map"] .segment.ran')).toHaveCount(1);await expect(page.locator('[data-statement="land_map"] .legend')).toHaveText(['ran','not started']);
  await expect(page.locator('[data-statement="land_map"] .map-time')).toHaveText('2 min of 9 min ran');
@@ -43,6 +46,9 @@ test('focus mode steps aside for the chat: on request, on Esc and when a reply f
  expect(await fits()).toEqual({app:true,composer:true,screen:true});
  await page.locator('#next').click();await expect(page.locator('body')).toHaveClass(/focus/);expect((await fits()).screen).toBe(true);
  await page.getByRole('button',{name:'Show chat',exact:true}).click();await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
+ await expect(page.locator('#focus-on')).toBeHidden();
+ // With the chat shown, a clock screen still fits its area: no inner scrolling.
+ expect((await fits()).screen).toBe(true);
  await page.getByRole('button',{name:'Focus',exact:true}).click();await expect(page.locator('body')).toHaveClass(/focus/);
  await page.keyboard.press('Escape');await expect(page.locator('body')).not.toHaveClass(/focus/);
  await page.getByRole('button',{name:'Focus',exact:true}).click();await page.locator('#next').click();await page.locator('#next').click();await expect(page.locator('#position')).toHaveText('4 / 6');

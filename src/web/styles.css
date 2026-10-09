@@ -436,6 +436,7 @@ input[type=checkbox] {
 }
 
 .panel-heading button {
+  white-space: nowrap;
   font-size: 11px;
   min-height: 30px;
   padding: 4px 10px;
@@ -1161,7 +1162,8 @@ body.focus .spoken > .micro {
   display: none;
 }
 
-/* Shorter windows: a smaller ring and headline so every screen fits without scrolling. */
+/* Shorter windows: tighter page chrome. How the screen's content sizes itself is decided by the
+   screen area's own height (container queries below), so it is right in normal and focus mode alike. */
 @media (max-height: 900px) {
   header {
     padding-top: 10px;
@@ -1185,6 +1187,59 @@ body.focus .spoken > .micro {
   .spoken > .micro {
     display: none;
   }
+}
+
+@media (max-height: 660px) {
+  .spoken p {
+    font-size: 15px;
+  }
+}
+
+/* The screen area is a size container: its content scales to the space it really has. */
+#screen {
+  container: screen / size;
+}
+
+/* When a screen has a headline, the timer card does not repeat the block name. */
+#screen:has(.keyword) .timer h3 {
+  display: none;
+}
+
+@container screen (max-height: 600px) {
+  #screen .timer > p.micro {
+    display: none;
+  }
+
+  #screen .keyword {
+    padding: 8px 0 4px;
+  }
+
+  #screen .keyword strong {
+    font-size: 46px;
+  }
+
+  #screen .timer {
+    padding: 12px 16px;
+  }
+
+  #screen .timer-dial {
+    width: 140px;
+    height: 140px;
+  }
+
+  #screen .timer-dial strong {
+    font-size: 32px;
+  }
+
+  #screen .alert {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  #screen .row button {
+    min-height: 34px;
+    padding: 6px 14px;
+  }
 
   /* The receipt is the busiest screen: tighter title, list and button spacing. */
   #screen .block {
@@ -1206,93 +1261,127 @@ body.focus .spoken > .micro {
   #screen > .row {
     margin-top: 8px;
   }
+}
 
-  /* The arrival screen already says "Simulated session"; on short windows the card label can go. */
-  body.focus .timer > .eyebrow {
+@container screen (max-height: 470px) {
+  /* The arrival screen already says "Simulated session"; here the card label can go. */
+  #screen .timer > .eyebrow {
     display: none;
   }
 
-  #screen .alert {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  #screen .row button {
-    min-height: 34px;
-    padding: 6px 14px;
-  }
-
-  .keyword {
-    padding: 8px 0 4px;
-  }
-
-  .keyword strong {
-    font-size: 46px;
-  }
-
-  .timer {
-    padding: 12px 16px;
-  }
-
-  .timer-dial {
-    width: 140px;
-    height: 140px;
-  }
-
-  .timer-dial strong {
-    font-size: 32px;
-  }
-}
-
-@media (max-height: 760px) {
-  .preview .panel-heading {
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-  }
-
-  .keyword strong {
+  #screen .keyword strong {
     font-size: 38px;
   }
 
-  .keyword p {
+  #screen .keyword p {
     margin-top: 2px;
   }
 
-  .timer-dial {
+  #screen .timer-dial {
     width: 112px;
     height: 112px;
     margin-bottom: 4px;
   }
 
-  .timer-dial strong {
+  #screen .timer-dial strong {
     font-size: 26px;
   }
 
-  .timer .row {
+  #screen .timer .row {
     margin-top: 6px;
+  }
+
+  /* Short screen areas with the chat shown: the ring sits beside its controls. Focus mode has the
+     room to keep them stacked. */
+  body:not(.focus) #screen .timer {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: 1fr auto auto auto 1fr;
+    justify-content: center;
+    column-gap: 20px;
+    text-align: left;
+  }
+
+  body:not(.focus) #screen .timer > * {
+    grid-column: 2;
+  }
+
+  body:not(.focus) #screen .timer .timer-dial {
+    grid-column: 1;
+    grid-row: 1 / 6;
+    margin: 0;
+  }
+
+  body:not(.focus) #screen .timer h3 {
+    grid-row: 2;
+  }
+
+  body:not(.focus) #screen .timer .timer-done-note {
+    grid-row: 3;
+  }
+
+  body:not(.focus) #screen .timer .row {
+    grid-row: 4;
+  }
+
+  body:not(.focus) #screen .timer .row {
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  body:not(.focus) #screen .timer-done .timer-done-note {
+    margin: 0 0 6px;
   }
 }
 
-@media (max-height: 660px) {
-  .keyword strong {
+@container screen (max-height: 380px) {
+  #screen .keyword strong {
     font-size: 32px;
   }
 
-  .timer-dial .timer-status {
+  #screen .timer-dial .timer-status {
     display: none;
   }
 
-  .timer-dial {
+  #screen .timer-dial {
     width: 92px;
     height: 92px;
   }
 
-  .timer-dial strong {
+  #screen .timer-dial strong {
     font-size: 22px;
   }
+}
 
-  .spoken p {
-    font-size: 15px;
+@container screen (max-height: 340px) {
+  #screen .keyword {
+    padding: 2px 0;
+  }
+
+  #screen .keyword strong {
+    font-size: 28px;
+  }
+
+  #screen .keyword p {
+    margin: 0;
+  }
+
+  #screen .alert {
+    padding: 6px 10px;
+  }
+
+  #screen .timer {
+    margin-top: 4px;
+    padding: 8px 14px;
+  }
+
+  #screen > .row {
+    margin-top: 4px;
+  }
+
+  #screen .row button {
+    min-height: 30px;
+    padding: 4px 12px;
   }
 }
 
@@ -1434,6 +1523,11 @@ html.theme-switching::view-transition-new(root) {
     display: block;
     margin-left: 0;
     margin-top: 4px;
+  }
+
+  /* Narrow screens: when the Focus button joins the panel buttons, the panel title steps aside. */
+  .panel-heading:has(#focus:not([hidden])) h2 {
+    display: none;
   }
 
   /* Narrow screens: status pills keep their first words and align with the app's edge. */

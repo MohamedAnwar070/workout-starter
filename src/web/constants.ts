@@ -14,10 +14,17 @@ export const UI_TEXT = {
   sessionEnded: 'Session ended',
   timeUp: "Time. Next when you're ready.",
   startSession: 'Start a session',
+  focusOn: 'Focus mode on',
+  focusOnDetail: 'Show chat or Esc for the conversation',
+  focusOff: 'Session complete',
+  focusOffDetail: 'the chat is back',
   themeSwitch: 'Dark theme',
   themeToDark: 'Switch to dark theme',
   themeToLight: 'Switch to light theme',
 } as const;
+
+// How long a status note (such as "Focus mode on") stays before it fades.
+export const NOTE_MS = 4000;
 
 // Remembered per browser only; the page works the same when storage is unavailable.
 export const STORAGE_KEYS = { theme: 'aira-workout-theme' } as const;

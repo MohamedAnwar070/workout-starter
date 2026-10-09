@@ -8,7 +8,7 @@ import type { StatementNode } from '../shared/openui/openui-model.js';
 import { redactValue } from '../shared/redact.js';
 import { renderComponent } from './components.js';
 import { button,byId,el,statusPill } from './dom.js';
-import { STORAGE_KEYS,UI_TEXT } from './constants.js';
+import { NOTE_MS,STORAGE_KEYS,UI_TEXT } from './constants.js';
 
 type Config={providers:ProviderStatus[];token:string};let config:Config|undefined;
 // Focus mode: while a session's clock screen is on, the workout takes the whole window.
@@ -59,18 +59,24 @@ function render(){
   byId('navigation').hidden=screens.length<2;byId('position').textContent=`${index+1} / ${screens.length}`;byId<HTMLButtonElement>('back').disabled=paused||index<=0;const ended=finished&&index===screens.length-1;byId<HTMLButtonElement>('next').disabled=paused||ended;byId('next').textContent=ended?UI_TEXT.sessionEnded:index===screens.length-1?UI_TEXT.finish:UI_TEXT.next;
   const children=(c.document.current?.props.children as StatementNode[]|undefined)??[];
   const clockScreen=children.some(n=>n.name==='Timer')&&isSession();
-  setFocus(clockScreen&&!focusOptOut&&!c.error);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?UI_TEXT.showChat:UI_TEXT.focus;
+  setFocus(clockScreen&&!focusOptOut&&!c.error,index===screens.length-1);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?UI_TEXT.showChat:UI_TEXT.focus;
   byId<HTMLButtonElement>('pause').disabled=!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
   const cues=(c.document.current?.props.children as StatementNode[]??[]).filter(n=>n.name==='Cue').map(n=>String(n.props.text));byId('spoken').textContent=cues.join(' ')||c.document.prose||'Current-screen Cues appear here as text. No audio is produced.';
   byId('state-json').textContent=JSON.stringify({ui_state:c.document.echo(),client_events:c.clientEvents,timers:timers.list()},null,2);byId<HTMLButtonElement>('export').disabled=c.pending||!c.events.length;
 }
-function setFocus(on:boolean){
+// A short note says why the layout changed when it changes by itself; a person's own Show chat,
+// Focus or Esc needs no explanation.
+let noteTimer:ReturnType<typeof setTimeout>|undefined,manualFocus=false;
+function note(id:string){for(const n of ['focus-on','focus-off'])byId(n).hidden=n!==id;clearTimeout(noteTimer);noteTimer=setTimeout(()=>{byId(id).hidden=true;},NOTE_MS);}
+function setFocus(on:boolean,atClose:boolean){
   if(on===focused)return;focused=on;
   const apply=()=>{document.body.classList.toggle('focus',on);scrollTo({top:0});};
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&'startViewTransition' in document)document.startViewTransition(apply);else apply();
+  if(!manualFocus){if(on)note('focus-on');else if(atClose)note('focus-off');}else{clearTimeout(noteTimer);byId('focus-on').hidden=byId('focus-off').hidden=true;}
+  manualFocus=false;
 }
-byId('focus').addEventListener('click',()=>{focusOptOut=focused;render();});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focused){focusOptOut=true;render();}});
+byId('focus').addEventListener('click',()=>{manualFocus=true;focusOptOut=focused;render();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&focused){manualFocus=true;focusOptOut=true;render();}});
 byId<HTMLFormElement>('composer').addEventListener('submit',event=>{event.preventDefault();const text=draft.value.trim();if(text){draft.value='';send(text);}});
 draft.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();byId<HTMLFormElement>('composer').requestSubmit();}});
 byId('sample').addEventListener('click',()=>send('Load wiring sample'));byId('cancel').addEventListener('click',()=>c.cancel());byId('retry').addEventListener('click',()=>{if(!paused)void c.retry();});
@@ -82,7 +88,7 @@ byId<HTMLInputElement>('consent').addEventListener('change',event=>{c.consent=(e
 byId('apply-patch').addEventListener('click',()=>{try{const raw=byId<HTMLTextAreaElement>('patch').value;c.document.apply(raw.includes('```')?raw:'```openui\n'+raw+'\n```');c.localEvent('Builder applied local OpenUI data: '+raw);byId('patch-status').textContent='Patch accepted. This is local fixture evidence, not a model run.';}catch{byId('patch-status').textContent='Invalid patch. Previous screen kept. Check names, arguments and catalog.';}});
 byId('export').addEventListener('click',()=>{const label=byId<HTMLSelectElement>('run-label').value;const payload={format:'aira-workout-run-v1',label,appVersion:APP_VERSION,schemaVersion:SCHEMA_VERSION,selectedProvider:c.provider,note:byId<HTMLTextAreaElement>('note').value,events:c.events,state:{ui_state:c.document.echo(),client_events:c.clientEvents},timers:timers.list()};const url=URL.createObjectURL(new Blob([JSON.stringify(redactValue(payload),null,2)],{type:'application/json'}));const link=el('a');link.href=url;link.download=label+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('export-status').textContent=`Downloaded ${label}.json. Review and move it into runs/.`;});
 async function start(){render();try{const response=await fetch('/api/config');if(!response.ok)throw new Error();config=await response.json();const select=byId<HTMLSelectElement>('provider');select.replaceChildren();for(const p of config!.providers){const option=el('option',p.label+(p.enabled?'':' · setup / blocked'));option.value=p.id;select.append(option);}select.value='mock';select.disabled=false;render();}catch{byId('status').textContent='Could not connect. Restart the local server and reload.';}}
-byId('status-tray').append(statusPill('pending',UI_TEXT.pending,UI_TEXT.pendingDetail,'busy'),statusPill('paused',UI_TEXT.paused,UI_TEXT.pausedDetail));
+byId('status-tray').append(statusPill('pending',UI_TEXT.pending,UI_TEXT.pendingDetail,'busy'),statusPill('paused',UI_TEXT.paused,UI_TEXT.pausedDetail),statusPill('focus-on',UI_TEXT.focusOn,UI_TEXT.focusOnDetail),statusPill('focus-off',UI_TEXT.focusOff,UI_TEXT.focusOffDetail));
 // Theme: follow the system unless the person picked one; the pick is remembered in this browser only.
 // The CSS does the rest through color-scheme, so there is no flash of the wrong theme on load.
 const systemDark=matchMedia('(prefers-color-scheme: dark)');
