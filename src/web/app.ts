@@ -60,7 +60,8 @@ function render(){
   const children=(c.document.current?.props.children as StatementNode[]|undefined)??[];
   const clockScreen=children.some(n=>n.name==='Timer')&&isSession();
   setFocus(clockScreen&&!focusOptOut&&!c.error,index===screens.length-1);byId('focus').hidden=!clockScreen;byId('focus').textContent=focused?UI_TEXT.showChat:UI_TEXT.focus;
-  byId<HTMLButtonElement>('pause').disabled=!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
+  // In a session there is only something to pause on a clock screen (and a paused preview can always resume).
+  byId<HTMLButtonElement>('pause').disabled=isSession()?!(clockScreen||paused):!screens.length;byId('pause').textContent=paused?'Resume preview':'Pause preview';byId('paused').hidden=!paused;
   const cues=(c.document.current?.props.children as StatementNode[]??[]).filter(n=>n.name==='Cue').map(n=>String(n.props.text));byId('spoken').textContent=cues.join(' ')||c.document.prose||'Current-screen Cues appear here as text. No audio is produced.';
   byId('state-json').textContent=JSON.stringify({ui_state:c.document.echo(),client_events:c.clientEvents,timers:timers.list()},null,2);byId<HTMLButtonElement>('export').disabled=c.pending||!c.events.length;
 }

@@ -12,7 +12,10 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  await expect(page.locator('#position')).toHaveText('1 / 6');await expect(page.locator('[data-statement="ready_k"]')).toContainText('10 min');
  await expect(page.locator('[data-statement="ready_map"] .segment')).toHaveCount(4);await expect(page.locator('[data-statement="ready_map"] figcaption')).toBeHidden();
  await expect(page.locator('#spoken')).toHaveText("Two quiet blocks. Step forward when you're set.");await page.screenshot({path:shots+'/04-workout-arrival.png',fullPage:true});
+ // Nothing to pause before the first clock.
+ await expect(page.locator('#pause')).toBeDisabled();
  await page.locator('#next').click();await expect(page.locator('[data-statement="warm_k"]')).toContainText('1 of 3 · 2 min');
+ await expect(page.locator('#pause')).toBeEnabled();
  // The session has started: focus mode leaves only the workout on screen.
  await expect(page.locator('body')).toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeHidden();
  // An automatic switch explains itself.
@@ -29,6 +32,7 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  // Finished: focus steps aside and the chat is back for the receipt.
  await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
  await expect(page.locator('#focus-off')).toHaveText('Session complete · the chat is back');
+ await expect(page.locator('#pause')).toBeDisabled();
  // The close shows what really ran before any model turn: warm-up only.
  await expect(page.locator('[data-statement="land_map"] .segment.ran')).toHaveCount(1);await expect(page.locator('[data-statement="land_map"] .legend')).toHaveText(['ran','not started']);
  await expect(page.locator('[data-statement="land_map"] .map-time')).toHaveText('2 min of 9 min ran');
