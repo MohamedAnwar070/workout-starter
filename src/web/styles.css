@@ -659,6 +659,7 @@ input[type=checkbox] {
 @media (prefers-reduced-motion: reduce) {
   #screen > * { animation: none; }
   .timer-ring .arc { transition: none; }
+  .timer-completing .timer-ring .arc { animation: none; }
   .theme-switch-track,
   .theme-switch-knob { transition: none; }
   .status-pill,
@@ -924,7 +925,22 @@ input[type=checkbox] {
 
 .timer-done .timer-ring .arc {
   stroke: var(--success);
-  stroke-dashoffset: 0 !important;
+}
+
+/* When a clock finishes, the green sweeps once round anticlockwise from 12 o'clock, carrying on
+   the direction the countdown was moving (the ring's path is 100 units long). */
+.timer-completing .timer-ring .arc {
+  animation: ring-complete 700ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes ring-complete {
+  from {
+    stroke-dashoffset: -100;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .timer-done .timer-done-note {
