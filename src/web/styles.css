@@ -595,6 +595,11 @@ input[type=checkbox] {
   margin-top: 10px;
 }
 
+.session-map .map-time {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
 .session-map .legend {
   display: inline-flex;
   align-items: center;

@@ -28,9 +28,10 @@ test('offline workout: situation, quiet blocks, live trim and an honest receipt'
  await expect(page.locator('body')).not.toHaveClass(/focus/);await expect(page.locator('.conversation')).toBeVisible();
  // The close shows what really ran before any model turn: warm-up only.
  await expect(page.locator('[data-statement="land_map"] .segment.ran')).toHaveCount(1);await expect(page.locator('[data-statement="land_map"] .legend')).toHaveText(['ran','not started']);
+ await expect(page.locator('[data-statement="land_map"] .map-time')).toHaveText('2 min of 9 min ran');
  await tap(page,'How did it go?');
  await expect(page.locator('[data-statement="land_k"]')).toContainText('1 of 3');await expect(page.locator('#screen')).toContainText('Not started: Block one, Block two.');
- await expect(page.locator('.message.assistant').last()).toContainText('One of three block clocks ran to zero.');await page.screenshot({path:shots+'/06-workout-receipt.png',fullPage:true});
+ await expect(page.locator('.message.assistant').last()).toContainText('One of three ran to zero.');await page.screenshot({path:shots+'/06-workout-receipt.png',fullPage:true});
  expect(errors).toEqual([]);
 });
 
@@ -50,6 +51,10 @@ test('focus mode steps aside for the chat: on request, on Esc and when a reply f
  await expect(page.locator('#error')).toBeVisible();await expect(page.locator('body')).not.toHaveClass(/focus/);
  await page.locator('#retry').click();await expect(page.locator('#error')).toBeHidden();await expect(page.locator('body')).toHaveClass(/focus/);
  await expect(page.locator('[data-statement="r1_alert"]')).toContainText('Now 9 min');
+ // Reaching the close ends the session: a clock still running is paused, so the receipt and the map agree.
+ await page.locator('#next').click();await page.getByRole('button',{name:'Start simulation',exact:true}).click();await page.locator('#next').click();
+ await expect(page.locator('.event').filter({hasText:'Paused the timer for Block two'})).toHaveCount(1);await expect(page.locator('[data-statement="land_map"] .segment.partial')).toHaveCount(1);
+ await page.locator('#next').click();await expect(page.locator('#next')).toHaveText('Session ended');await expect(page.locator('#next')).toBeDisabled();
 });
 
 test('offline workout fits a phone and stops on pain',async({page})=>{

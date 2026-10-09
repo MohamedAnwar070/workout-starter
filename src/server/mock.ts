@@ -101,7 +101,8 @@ export function planSession(sit: Situation): Step[] {
 function readingFor(sit: Situation, steps: Step[]) {
   const blocks = steps.filter(step => step.kind === 'block').length;
   const vibe = { quiet: 'Quiet', gentle: 'Gentle', brisk: 'Brisk', steady: '' }[sit.vibe];
-  return [sit.place, sit.focus && `${sit.focus} focus`, vibe, `${cap(plural(blocks, 'block'))}`].filter(Boolean).join('. ') + '.';
+  const parts = steps.some(step => step.kind === 'warm') ? `Warm-up + ${plural(blocks, 'block')}` : cap(plural(blocks, 'block'));
+  return [sit.place, sit.focus && `${sit.focus} focus`, vibe, parts].filter(Boolean).join('. ') + '.';
 }
 
 // ---- Rendering a plan as OpenUI ----
@@ -288,7 +289,7 @@ function receipt(session: Session, events: string[]): Turn {
   if (!clocks.size) return { reply: fence(`root = Screens([${session.keys.join(', ')}], ${session.cursor})`) + "\nI can't see the clocks from here, so I won't guess how it went." };
   const resets = new Map<string, number>();
   for (const event of events) { const m = event.match(/^Reset the timer for (.+) to /); if (m) resets.set(m[1], (resets.get(m[1]) ?? 0) + 1); }
-  const work = active(session.steps), rests = session.steps.filter(s => s.kind === 'rest');
+  const work = active(session.steps);
   const state = (s: Step) => clocks.get(`${s.id}_t`) ?? { status: 'stopped', remaining: s.seconds };
   const done = work.filter(s => state(s).status === 'done');
   const partway = work.filter(s => ['running', 'paused'].includes(state(s).status));
@@ -298,7 +299,6 @@ function receipt(session: Session, events: string[]): Turn {
     ...(done.length ? [`Ran to zero: ${names(done)}.`] : []),
     ...partway.map(s => `${s.label} stopped with ${dur(state(s).remaining)} left.`),
     ...(untouched.length ? [`Not started: ${names(untouched)}.`] : []),
-    ...(rests.length ? [`Rest clocks: ${rests.filter(s => state(s).status === 'done').length} of ${rests.length} ran out.`] : []),
     ...[...resets].map(([label, n]) => `${label} was reset ${n === 1 ? 'once' : plural(n, 'time')}.`),
   ];
   const minutes = total(session.steps) / 60;
@@ -306,14 +306,14 @@ function receipt(session: Session, events: string[]): Turn {
     ? (minutes <= 58 ? 'Two minutes longer next time' : 'Same again tomorrow')
     : (minutes >= 3 ? 'Two minutes shorter next time' : 'Same again tomorrow');
   const n = work.length;
-  const headline = done.length === n ? (n === 1 ? 'The clock ran to zero.' : n === 2 ? 'Both block clocks ran to zero.' : `All ${words(n)} block clocks ran to zero.`)
-    : done.length === 0 ? (n === 1 ? "The clock didn't run this time, and that's fine." : `None of the ${words(n)} block clocks ran this time, and that's fine.`)
-    : `${cap(words(done.length))} of ${words(n)} block clocks ran to zero.`;
+  const headline = done.length === n ? (n === 1 ? 'The clock ran to zero.' : n === 2 ? 'Both ran to zero.' : `All ${words(n)} ran to zero.`)
+    : done.length === 0 ? (n === 1 ? "The clock didn't run this time, and that's fine." : `None of the ${words(n)} ran this time, and that's fine.`)
+    : `${cap(words(done.length))} of ${words(n)} ran to zero.`;
   const doc = [
     st('land_t', 'Text', ["Here's what ran.", 'title']),
     ...items.map((text, i) => st(`land_i${i + 1}`, 'ListItem', [text, 'bullet'])),
     refs('land_l', 'List', items.map((_, i) => `land_i${i + 1}`)),
-    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'block clocks ran to zero · simulated']),
+    st('land_k', 'Keyword', [`${done.length} of ${work.length}`, 'warm-up and blocks ran to zero · simulated']),
     st('land_f2', 'FollowUps', [[...new Set(['Same again tomorrow', next])]]),
     refs('s_land', 'Screen', ['land_t', 'land_k', 'land_map', 'land_l', 'land_cue', 'land_f2']),
   ];

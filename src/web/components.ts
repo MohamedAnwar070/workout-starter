@@ -38,7 +38,10 @@ export const renderers: Record<string,(node:StatementNode,context:Context)=>HTML
       bar.replaceChildren(...steps.map(s=>{const seg=el('span','','segment'+(/^rest\b/i.test(s.label)?' rest':'')+(state(s)==='done'?' ran':state(s)==='stopped'?'':' partial')+(s.current?' current':''));seg.style.flexGrow=String(s.seconds);seg.title=`${s.label} · ${clock(s.seconds)} · ${word(s)}`;return seg;}));
       // The headline already gives counts; once something has happened the caption explains the colours instead.
       const shown=new Set(steps.some(s=>state(s)!=='stopped')?steps.map(word):[]),key=(['ran','partly','not started'] as const).filter(w=>shown.has(w));
-      caption.replaceChildren(...(p.caption?[el('span',String(p.caption),'map-caption')]:[]),...key.map(w=>{const item=el('span','','legend');item.append(el('i','',w.replace(' ','-')),document.createTextNode(w));return item;}));
+      // Time on the clock, from the real timers: how much of the planned session actually ran.
+      const left=new Map(c.timers.list().map(t=>[t.id,t.remaining])),total=steps.reduce((t,s)=>t+s.seconds,0),ran=Math.round(steps.reduce((t,s)=>t+s.seconds-(left.get(s.id)??s.seconds),0));
+      const time=shown.size?[el('span',`${clock(ran)} of ${clock(total)} ran`,'map-time')]:[];
+      caption.replaceChildren(...(p.caption?[el('span',String(p.caption),'map-caption')]:[]),...time,...key.map(w=>{const item=el('span','','legend');item.append(el('i','',w.replace(' ','-')),document.createTextNode(w));return item;}));
       caption.hidden=!caption.childNodes.length;
       n.setAttribute('aria-label',steps.map(s=>`${s.label}, ${clock(s.seconds)}, ${word(s)}`).join('; '));
     };
